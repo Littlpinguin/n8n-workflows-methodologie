@@ -296,7 +296,7 @@
     },
     {
       "parameters": {
-        "content": "## Diagnostic - Generer Rapport\n\nWebhook fire-and-forget declenche par le JS du diagnostic example.com.\nGenere une analyse IA personnalisee + mot de passe + stocke dans Supabase + update Brevo.\n\n**Flux :** Webhook > Validation > Scraping Jina (parallele) > 2x Gemini 3 Pro > Supabase > Brevo\n\n**Credentials :** googlePalmApi (Gemini), supabaseServiceRole, brevoApi\n**Error Workflow :** bAurtiK8UqF7Mlw6\n**Supabase :** <SUPABASE_PROJECT_REF> / diagnostic_reports\n**Brevo :** Liste 9 = Rapport pret (declenche automation email)\n\n**Ordre critique :** Supabase > Brevo PUT (password) > Brevo POST (liste 9)",
+        "content": "## Diagnostic - Generer Rapport\n\nWebhook fire-and-forget declenche par le JS du diagnostic example.com.\nGenere une analyse IA personnalisee + mot de passe + stocke dans Supabase + update Brevo.\n\n**Flux :** Webhook > Validation > Scraping Jina (parallele) > 2x Gemini 3 Pro > Supabase > Brevo\n\n**Credentials :** googlePalmApi (Gemini), supabaseServiceRole, brevoApi\n**Error Workflow :** N8N_RESOURCE_ID_28\n**Supabase :** <SUPABASE_PROJECT_REF> / diagnostic_reports\n**Brevo :** Liste 9 = Rapport pret (declenche automation email)\n\n**Ordre critique :** Supabase > Brevo PUT (password) > Brevo POST (liste 9)",
         "height": 280,
         "width": 450
       },
@@ -460,7 +460,7 @@
     "saveDataErrorExecution": "all",
     "saveDataSuccessExecution": "all",
     "saveManualExecutions": true,
-    "errorWorkflow": "bAurtiK8UqF7Mlw6",
+    "errorWorkflow": "N8N_RESOURCE_ID_28",
     "callerPolicy": "workflowsFromSameOwner",
     "availableInMCP": false
   }

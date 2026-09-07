@@ -4,7 +4,7 @@
 
 **Goal:** Build 3 n8n workflows (Veille Hebdo, Content Generator, La Missive du Prof) reliés par un Google Sheet central et des prompts éditables dans Google Docs, utilisant Perplexity pour la veille et Gemini 3 Pro pour la rédaction.
 
-**Architecture:** 3 workflows indépendants connectés via un Google Sheet "Content Calendar" (2 onglets). Les prompts sont stockés dans Google Docs éditables. Le profil business et le guide éditorial existants sont lus par tous les workflows. L'Error Handler existant (`bAurtiK8UqF7Mlw6`) est assigné aux 3 workflows.
+**Architecture:** 3 workflows indépendants connectés via un Google Sheet "Content Calendar" (2 onglets). Les prompts sont stockés dans Google Docs éditables. Le profil business et le guide éditorial existants sont lus par tous les workflows. L'Error Handler existant (`N8N_RESOURCE_ID_28`) est assigné aux 3 workflows.
 
 **Tech Stack:** n8n 2.35.5, Gemini 3 Pro (HTTP Request direct), Perplexity sonar-pro (HTTP Request), Google Sheets, Google Drive/Docs, Gmail
 
@@ -16,8 +16,8 @@
 - Profil Business : `GOOGLE_DOC_ID_02`
 - Guide Editorial : `GOOGLE_DOC_ID_08`
 - Reference Missive : `GOOGLE_DOC_ID_06`
-- Dossier Content System : `1GjXAwmt8DuVbPJjsWI1ARsZPfSQIpsKv`
-- Error Handler workflow : `bAurtiK8UqF7Mlw6`
+- Dossier Content System : `GOOGLE_DOC_ID_17`
+- Error Handler workflow : `N8N_RESOURCE_ID_28`
 
 ---
 
@@ -31,7 +31,7 @@
 
 Utiliser `mcp__google-drive__createSpreadsheet` :
 - Nom : `Content Calendar`
-- Créer dans le dossier Content System (`1GjXAwmt8DuVbPJjsWI1ARsZPfSQIpsKv`)
+- Créer dans le dossier Content System (`GOOGLE_DOC_ID_17`)
 
 **Step 2 : Renommer Sheet1 en "Propositions" et écrire les en-têtes**
 
@@ -78,7 +78,7 @@ git commit -m "docs: noter ID Content Calendar Google Sheet"
 
 ### Step 1 : Créer le Google Doc "Prompt LinkedIn"
 
-Utiliser `mcp__google-drive__createDocument` dans le dossier `1GjXAwmt8DuVbPJjsWI1ARsZPfSQIpsKv`.
+Utiliser `mcp__google-drive__createDocument` dans le dossier `GOOGLE_DOC_ID_17`.
 
 Contenu à écrire via `mcp__google-drive__appendText` :
 
@@ -586,7 +586,7 @@ return propositions
 
 ### Step 10 : Configurer l'Error Workflow
 
-Assigner `bAurtiK8UqF7Mlw6` comme Error Workflow dans les settings du workflow.
+Assigner `N8N_RESOURCE_ID_28` comme Error Workflow dans les settings du workflow.
 
 ### Step 11 : Ajouter les Sticky Notes
 
@@ -762,7 +762,7 @@ return [{
 
 ### Step 10 : Error Workflow + Sticky Notes
 
-- Assigner Error Workflow `bAurtiK8UqF7Mlw6`
+- Assigner Error Workflow `N8N_RESOURCE_ID_28`
 - 5 sticky notes : Trigger, Lecture Sheet, Chargement docs, Génération Gemini, Écriture + Notif
 
 ### Step 11 : Valider + tester

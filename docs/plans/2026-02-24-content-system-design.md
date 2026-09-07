@@ -23,13 +23,13 @@ Système de création de contenu multi-plateforme pour Alex Martin ("Le Prof"). 
 | Profil Business | `GOOGLE_DOC_ID_02` | Source de vérité positionnement |
 | Guide Editorial | `GOOGLE_DOC_ID_08` | Style, ton, contraintes |
 | Reference Missive | `GOOGLE_DOC_ID_06` | Structure annotée sept. 2024 |
-| Dossier Content System | `1GjXAwmt8DuVbPJjsWI1ARsZPfSQIpsKv` | Contient prompts + docs |
+| Dossier Content System | `GOOGLE_DOC_ID_17` | Contient prompts + docs |
 | Content Calendar (Sheet) | `GOOGLE_DOC_ID_04` | Hub central 2 onglets |
-| Prompt LinkedIn | `1RM2kqd95nAuQGsDrQph7nfmbUvpcLivLs_7tyrdWXnA` | Prompt enrichi (23 templates) |
-| Prompt Substack Article | `1WNavkoaIQRhLx7MOXW1CkVPcLyOKmR5m0gTmbo_bBOQ` | Prompt articles de fond |
-| Prompt Substack Notes | `12CHvW9QoNmsNqbEU84spbXJF8kNC4CzndBuAwP4krGg` | Prompt micro-blogging |
+| Prompt LinkedIn | `GOOGLE_DOC_ID_19` | Prompt enrichi (23 templates) |
+| Prompt Substack Article | `GOOGLE_DOC_ID_20` | Prompt articles de fond |
+| Prompt Substack Notes | `GOOGLE_DOC_ID_16` | Prompt micro-blogging |
 | Prompt La Missive du Prof | `GOOGLE_DOC_ID_03` | Prompt newsletter mensuelle |
-| Ref Ancien Prompt LinkedIn | `1svyJ6MWmdNp5iLtjV9QQfbWFRJhesc2mYOwqH-ONb7w` | Posts exemples + templates |
+| Ref Ancien Prompt LinkedIn | `GOOGLE_DOC_ID_21` | Posts exemples + templates |
 
 ### Workflows n8n
 

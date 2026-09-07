@@ -43,7 +43,7 @@
 n8n_create_workflow:
   name: "Discord Growth Agent"
   nodes: [Sticky Note avec description du workflow]
-  settings: { timezone: "Europe/Paris", errorWorkflow: "WZllUF0m1hH7pf9E" }
+  settings: { timezone: "Europe/Paris", errorWorkflow: "N8N_RESOURCE_ID_26" }
 ```
 
 - [ ] **Step 2 : Ajouter le Discord Trigger (DM)**
@@ -416,13 +416,13 @@ Nodes :
 ```javascript
 const input = $json;
 const DB_MAP = {
-  'prospects': '32ce579edc0281b2b1aec1662002d5af',
-  'offres': '32ce579edc02814aaebef956748f9fa4',
-  'personas': '32ce579edc0281e7b05cd4b62493c16b',
-  'sequences': '32ce579edc02814ebdc4dc4468bf0b0b',
-  'signaux': '32ce579edc0281de8c55c1ddfefc6aef',
-  'deals': '32ce579edc0281d8a5b4e824757c9730',
-  'stats': '32ce579edc028175a7e6dd52032d0746'
+  'prospects': 'NOTION_ID_12',
+  'offres': 'NOTION_ID_09',
+  'personas': 'NOTION_ID_15',
+  'sequences': 'NOTION_ID_10',
+  'signaux': 'NOTION_ID_14',
+  'deals': 'NOTION_ID_13',
+  'stats': 'NOTION_ID_11'
 };
 
 const dbId = DB_MAP[input.database_name] || DB_MAP['prospects'];
@@ -716,7 +716,7 @@ Nodes :
 Body :
 ```json
 {
-  "parent": { "database_id": "32ce579edc02814aaebef956748f9fa4" },
+  "parent": { "database_id": "NOTION_ID_09" },
   "properties": {
     "Nom offre": { "title": [{ "text": { "content": "{{ $json.nom }}" } }] },
     "Proposition de valeur": { "rich_text": [{ "text": { "content": "{{ $json.proposition_valeur }}" } }] },
@@ -765,7 +765,7 @@ const offreId = offreResults[0]?.id || null;
 const input = $('Execute Workflow Trigger').first().json;
 
 const payload = {
-  parent: { database_id: '32ce579edc0281e7b05cd4b62493c16b' },
+  parent: { database_id: 'NOTION_ID_15' },
   properties: {
     'Nom persona': { title: [{ text: { content: input.nom_persona } }] },
     'Intitulés de poste': { multi_select: (input.intitules_poste || '').split(',').map(s => ({ name: s.trim() })) },

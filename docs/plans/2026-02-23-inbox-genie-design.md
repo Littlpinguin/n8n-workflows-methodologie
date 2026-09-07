@@ -170,7 +170,7 @@ Exemples de formules :
 
 ## Error handling
 
-- Error workflow existant : `bAurtiK8UqF7Mlw6`
+- Error workflow existant : `N8N_RESOURCE_ID_28`
 - Retry x2 sur les appels Gemini (3s entre chaque)
 - `continueOnFail` sur Gmail addLabels (un label qui echoue ne bloque pas le reste)
 - `markAsRead` en fin de chaine : si le workflow echoue, les emails non traites restent non lus et sont repris le lendemain

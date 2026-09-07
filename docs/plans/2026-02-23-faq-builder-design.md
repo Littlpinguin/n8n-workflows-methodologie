@@ -129,7 +129,7 @@ Le prompt du brouillon recevra en plus la FAQ complete. Instructions :
 
 ## Error handling
 
-- Error workflow existant : `bAurtiK8UqF7Mlw6`
+- Error workflow existant : `N8N_RESOURCE_ID_28`
 - Retry x2 sur appels Gemini (3s entre chaque)
 - `continueOnFail` sur Gmail addLabel "FAQ"
 - Si le workflow echoue, les threads sans label "FAQ" seront repris le lendemain

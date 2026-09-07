@@ -27,8 +27,8 @@
 - Google Doc Profil Business : `GOOGLE_DOC_ID_02`
 - Dossier Drive Profil Business : `GOOGLE_DOC_ID_13`
 - Google Sheet Inbox Genie Stats : `GOOGLE_DOC_ID_09`
-- Error Workflow : `bAurtiK8UqF7Mlw6`
-- Dossier Drive Automatisations : `1JrjrEv41AZ_Gq3S7-gFK64cROpJfLqe3`
+- Error Workflow : `N8N_RESOURCE_ID_28`
+- Dossier Drive Automatisations : `GOOGLE_DOC_ID_18`
 
 ### Patterns a suivre (REX)
 
@@ -48,7 +48,7 @@
 
 **Step 1 : Creer la Google Sheet "FAQ Base"**
 
-Via MCP Google Drive, creer une nouvelle spreadsheet dans le dossier Automatisations (`1JrjrEv41AZ_Gq3S7-gFK64cROpJfLqe3`).
+Via MCP Google Drive, creer une nouvelle spreadsheet dans le dossier Automatisations (`GOOGLE_DOC_ID_18`).
 Nom : `FAQ Base`
 Colonnes de l'onglet 1 (renommer en "FAQ") :
 - A1: `Date`
@@ -76,7 +76,7 @@ Conserver l'ID de la Google Sheet et l'ID du label Gmail pour les tasks suivante
 **Step 1 : Creer le workflow via `n8n_create_workflow`**
 
 Nom : `Gmail - FAQ Builder`
-Settings : `executionOrder: "v1"`, `errorWorkflow: "bAurtiK8UqF7Mlw6"`
+Settings : `executionOrder: "v1"`, `errorWorkflow: "N8N_RESOURCE_ID_28"`
 
 Nodes :
 

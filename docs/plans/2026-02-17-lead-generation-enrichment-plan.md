@@ -1115,7 +1115,7 @@ Corriger toutes les erreurs et warnings.
 
 **Step 2 : Configurer le error workflow**
 
-Verifier qu'un error workflow existe sur l'instance n8n (cf. workflow `tVCoRFth09sKXyE8` deja en production). Configurer le `errorWorkflow` dans les settings du workflow.
+Verifier qu'un error workflow existe sur l'instance n8n (cf. workflow `N8N_RESOURCE_ID_32` deja en production). Configurer le `errorWorkflow` dans les settings du workflow.
 
 **Step 3 : Test end-to-end**
 

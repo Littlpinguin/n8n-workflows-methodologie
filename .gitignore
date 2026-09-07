@@ -8,10 +8,6 @@ gcp-oauth*.json
 *.pem
 *.key
 
-# Bibliotheques de templates tierces (a cloner localement, voir README)
-awesome-n8n-templates/
-n8n-workflow-templates/
-ultimate-n8n-ai-workflows/
 
 # Backups de workflows : peuvent contenir des cles en dur dans les nodes
 workflows/backups/

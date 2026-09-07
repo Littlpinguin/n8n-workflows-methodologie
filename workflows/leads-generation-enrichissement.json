@@ -3308,7 +3308,7 @@
     "executionOrder": "v1",
     "callerPolicy": "workflowsFromSameOwner",
     "availableInMCP": false,
-    "errorWorkflow": "bAurtiK8UqF7Mlw6",
+    "errorWorkflow": "N8N_RESOURCE_ID_28",
     "timeSavedMode": "fixed",
     "binaryMode": "separate"
   },
@@ -3358,7 +3358,7 @@
               "settings": {
                 "userActivated": true,
                 "easyAIWorkflowOnboarded": true,
-                "firstSuccessfulWorkflowId": "bAurtiK8UqF7Mlw6",
+                "firstSuccessfulWorkflowId": "N8N_RESOURCE_ID_28",
                 "userActivatedAt": 1771362744457
               },
               "disabled": false,

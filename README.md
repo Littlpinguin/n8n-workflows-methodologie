@@ -24,6 +24,9 @@ retours d'expérience post-production.
 | `schemas/` | Schémas visuels des workflows (HTML autonome) |
 | `memory/` | Leçons apprises réutilisables |
 | `discord-relay/` | Petit relais Node.js Discord → webhook n8n |
+| `awesome-n8n-templates/` | *(sous-module)* 288 templates curatés, 19 catégories |
+| `n8n-workflow-templates/` | *(sous-module)* 2 053 workflows, 365 intégrations |
+| `ultimate-n8n-ai-workflows/` | *(sous-module)* 2 772 workflows AI/RAG/agents |
 
 ## Les 12 workflows
 
@@ -44,14 +47,17 @@ retours d'expérience post-production.
 
 ## Démarrage
 
-```bash
-git clone <ce-repo> && cd automatisations-n8n
+Les 5 100+ workflows de référence arrivent avec le dépôt, en sous-modules :
 
-# Les bibliothèques de templates sont des projets tiers, non versionnés ici
-git clone https://github.com/enescingoz/awesome-n8n-templates.git
-git clone https://github.com/Danitilahun/n8n-workflow-templates.git
-git clone https://github.com/oxbshw/ultimate-n8n-ai-workflows.git
+```bash
+git clone --recurse-submodules https://github.com/Littlpinguin/n8n-workflows-methodologie.git
+cd n8n-workflows-methodologie
 ```
+
+Déjà cloné sans les sous-modules ? `git submodule update --init --recursive`
+
+Pour mettre les bibliothèques à jour depuis leurs dépôts d'origine :
+`git submodule update --remote`
 
 Configurer l'accès à l'instance n8n via variables d'environnement — jamais en dur :
 
@@ -83,5 +89,17 @@ vos propres ressources, et les credentials à recréer dans votre instance n8n.
 
 ## Licence
 
-MIT — voir [LICENSE](LICENSE). Les bibliothèques de templates tierces citées plus haut
-restent sous leurs licences respectives.
+MIT — voir [LICENSE](LICENSE). La licence couvre le contenu de ce dépôt : la méthode,
+les workflows, la documentation.
+
+Les trois bibliothèques de référence sont des **sous-modules**, pas des copies : leur
+contenu n'est pas redistribué ici, seul un pointeur vers le dépôt d'origine l'est. Chacune
+reste la propriété de ses auteurs, sous ses propres conditions — et certaines ne déclarent
+aucune licence explicite, ce qui vaut « tous droits réservés » par défaut. Elles sont donc
+utilisables comme référence de conception, pas comme contenu à réutiliser tel quel.
+
+| Bibliothèque | Auteur |
+|---|---|
+| [awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates) | enescingoz |
+| [n8n-workflow-templates](https://github.com/Danitilahun/n8n-workflow-templates) | Danitilahun |
+| [ultimate-n8n-ai-workflows](https://github.com/oxbshw/ultimate-n8n-ai-workflows) | oxbshw |

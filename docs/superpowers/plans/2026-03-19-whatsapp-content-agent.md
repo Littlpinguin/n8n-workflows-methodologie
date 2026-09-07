@@ -12,7 +12,7 @@
 
 **Conventions n8n (ref CLAUDE.md) :**
 - Tous les nodes nommes explicitement (verbe + objet)
-- Error workflow global : `WZllUF0m1hH7pf9E`
+- Error workflow global : `N8N_RESOURCE_ID_26`
 - Notion API via HTTP Request (headers en dur, meme pattern que les WF v2 existants)
 - Code node v2 : toujours `$input.all().map()` pour N items, `$input.first()` pour 1 item
 - Gemini : `responseMimeType: 'application/json'` + toujours gerer `Array.isArray()`
@@ -32,9 +32,9 @@
 - `qdrantApi` — Qdrant Cloud API key (Header Auth)
 
 **Notion databases (ref memoire projet) :**
-- Idees : `11be579e-dc02-8139-acca-d85e74d31bd0`
-- Contenus : `11be579e-dc02-81bd-9fab-c403e4570b6c`
-- Profils : `11be579e-dc02-81d9-be51-f60e0d54328f`
+- Idees : `NOTION_ID_02`
+- Contenus : `NOTION_ID_03`
+- Profils : `NOTION_ID_04`
 
 ---
 
@@ -103,7 +103,7 @@ Attendu : `"status": "green"`, `"vectors_count": 0`, 6 payload indexes.
 Utiliser `n8n_create_workflow` :
 - Nom : `Content - Agent Sync Qdrant`
 - Node 1 : `Declencheur quotidien 2h` (scheduleTrigger, cron `0 2 * * *`)
-- Settings : timezone `Europe/Paris`, errorWorkflow `WZllUF0m1hH7pf9E`
+- Settings : timezone `Europe/Paris`, errorWorkflow `N8N_RESOURCE_ID_26`
 - `active: false`
 
 - [ ] **Step 2 : Ajouter le node "Charger curseur sync"**
@@ -146,7 +146,7 @@ Connexion : Charger curseur sync → Requeter idees modifiees → Paginer idees
 - [ ] **Step 4 : Ajouter les nodes "Requeter contenus modifies" (avec pagination)**
 
 Meme pattern que Step 3 pour la base contenus :
-- POST `https://api.notion.com/v1/databases/11be579edc0281bd9fabc403e4570b6c/query`
+- POST `https://api.notion.com/v1/databases/NOTION_ID_05/query`
 - Headers Notion
 - Body : filtre `last_edited_time` > `$json.lastSync`, page_size 100
 - `onError: continueRegularOutput`, `alwaysOutputData: true`
@@ -352,7 +352,7 @@ git add -A && git commit -m "feat: WF-Sync - synchronisation Notion vers Qdrant 
 Utiliser `n8n_create_workflow` :
 - Nom : `Content - WhatsApp Agent`
 - Node 1 : `Reception WhatsApp` (whatsAppTrigger)
-- Settings : timezone `Europe/Paris`, errorWorkflow `WZllUF0m1hH7pf9E`
+- Settings : timezone `Europe/Paris`, errorWorkflow `N8N_RESOURCE_ID_26`
 - Credential : `whatsAppBusinessApi`
 - `active: false`
 
@@ -660,7 +660,7 @@ git commit -m "feat: WF-Main - classifieur intention, dispatch, sauvegarde Qdran
 
 - Nom : `Content - Agent Noter Idee`
 - Trigger : `executeWorkflowTrigger`
-- Settings : errorWorkflow `WZllUF0m1hH7pf9E`
+- Settings : errorWorkflow `N8N_RESOURCE_ID_26`
 
 - [ ] **Step 2 : Ajouter le node "Extraire idee" (Gemini Flash)**
 

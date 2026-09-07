@@ -16,7 +16,7 @@
 
 ### Task 1: Ajouter les propriétés dans la base `idées`
 
-**Context:** La base `idées` (`11be579e-dc02-8139-acca-d85e74d31bd0`) a besoin de 3 nouvelles propriétés simples (la relation sera créée dans Task 4).
+**Context:** La base `idées` (`NOTION_ID_02`) a besoin de 3 nouvelles propriétés simples (la relation sera créée dans Task 4).
 
 - [ ] **Step 1: Ajouter propriété `Score` (number)**
 
@@ -89,12 +89,12 @@ Expected: `Score: number`, `Angle: rich_text`, `Priorité: select`
 
 ### Task 2: Ajouter les propriétés et modifier la base `__contenus`
 
-**Context:** La base `__contenus` (`11be579e-dc02-81bd-9fab-c403e4570b6c`) a besoin de 2 nouvelles propriétés simples + modifications des options Canal et État. Les relations seront créées dans Task 4.
+**Context:** La base `__contenus` (`NOTION_ID_03`) a besoin de 2 nouvelles propriétés simples + modifications des options Canal et État. Les relations seront créées dans Task 4.
 
 - [ ] **Step 1: Ajouter propriétés `Logs` et `Prompt visuel validé` (rich_text)**
 
 ```bash
-curl -s -X PATCH 'https://api.notion.com/v1/databases/11be579edc0281bd9fabc403e4570b6c' \
+curl -s -X PATCH 'https://api.notion.com/v1/databases/NOTION_ID_05' \
   -H 'Authorization: Bearer $NOTION_TOKEN' \
   -H 'Notion-Version: 2022-06-28' \
   -H 'Content-Type: application/json' \
@@ -111,7 +111,7 @@ curl -s -X PATCH 'https://api.notion.com/v1/databases/11be579edc0281bd9fabc403e4
 Note : L'API Notion ne permet pas d'ajouter des options à un select existant sans risquer d'écraser les options actuelles. On envoie toutes les options (existante + nouvelles).
 
 ```bash
-curl -s -X PATCH 'https://api.notion.com/v1/databases/11be579edc0281bd9fabc403e4570b6c' \
+curl -s -X PATCH 'https://api.notion.com/v1/databases/NOTION_ID_05' \
   -H 'Authorization: Bearer $NOTION_TOKEN' \
   -H 'Notion-Version: 2022-06-28' \
   -H 'Content-Type: application/json' \
@@ -140,7 +140,7 @@ Action manuelle : Dans Notion, ouvrir la base `__contenus` → propriété `Éta
 - [ ] **Step 4: Vérifier**
 
 ```bash
-curl -s 'https://api.notion.com/v1/databases/11be579edc0281bd9fabc403e4570b6c' \
+curl -s 'https://api.notion.com/v1/databases/NOTION_ID_05' \
   -H 'Authorization: Bearer $NOTION_TOKEN' \
   -H 'Notion-Version: 2022-06-28' | python3 -c "
 import json, sys
@@ -164,12 +164,12 @@ Expected: Logs et Prompt visuel validé présents, Canal avec 4 options, État a
 
 ### Task 3: Ajouter les propriétés dans la base `profils`
 
-**Context:** La base `profils` (`11be579e-dc02-81d9-be51-f60e0d54328f`) a besoin de 4 nouvelles propriétés.
+**Context:** La base `profils` (`NOTION_ID_04`) a besoin de 4 nouvelles propriétés.
 
 - [ ] **Step 1: Ajouter les 4 propriétés**
 
 ```bash
-curl -s -X PATCH 'https://api.notion.com/v1/databases/11be579edc0281d9be51f60e0d54328f' \
+curl -s -X PATCH 'https://api.notion.com/v1/databases/NOTION_ID_06' \
   -H 'Authorization: Bearer $NOTION_TOKEN' \
   -H 'Notion-Version: 2022-06-28' \
   -H 'Content-Type: application/json' \
@@ -186,7 +186,7 @@ curl -s -X PATCH 'https://api.notion.com/v1/databases/11be579edc0281d9be51f60e0d
 - [ ] **Step 2: Vérifier**
 
 ```bash
-curl -s 'https://api.notion.com/v1/databases/11be579edc0281d9be51f60e0d54328f' \
+curl -s 'https://api.notion.com/v1/databases/NOTION_ID_06' \
   -H 'Authorization: Bearer $NOTION_TOKEN' \
   -H 'Notion-Version: 2022-06-28' | python3 -c "
 import json, sys
@@ -209,7 +209,7 @@ Expected: 4 propriétés présentes avec les bons types.
 On ajoute la relation sur `__contenus` en spécifiant `dual_property` pour la rendre bidirectionnelle (crée automatiquement la propriété inverse `Contenus` dans `idées`).
 
 ```bash
-curl -s -X PATCH 'https://api.notion.com/v1/databases/11be579edc0281bd9fabc403e4570b6c' \
+curl -s -X PATCH 'https://api.notion.com/v1/databases/NOTION_ID_05' \
   -H 'Authorization: Bearer $NOTION_TOKEN' \
   -H 'Notion-Version: 2022-06-28' \
   -H 'Content-Type: application/json' \
@@ -233,7 +233,7 @@ Expected: 200 OK. La propriété `Idée source` apparaît dans `__contenus` et `
 - [ ] **Step 2: Créer relation unidirectionnelle __contenus → profils**
 
 ```bash
-curl -s -X PATCH 'https://api.notion.com/v1/databases/11be579edc0281bd9fabc403e4570b6c' \
+curl -s -X PATCH 'https://api.notion.com/v1/databases/NOTION_ID_05' \
   -H 'Authorization: Bearer $NOTION_TOKEN' \
   -H 'Notion-Version: 2022-06-28' \
   -H 'Content-Type: application/json' \
@@ -241,7 +241,7 @@ curl -s -X PATCH 'https://api.notion.com/v1/databases/11be579edc0281bd9fabc403e4
     "properties": {
       "Profil": {
         "relation": {
-          "database_id": "11be579edc0281d9be51f60e0d54328f",
+          "database_id": "NOTION_ID_06",
           "type": "single_property",
           "single_property": {}
         }
@@ -256,7 +256,7 @@ Expected: 200 OK. La propriété `Profil` apparaît dans `__contenus`. Pas de pr
 
 ```bash
 # Vérifier __contenus
-curl -s 'https://api.notion.com/v1/databases/11be579edc0281bd9fabc403e4570b6c' \
+curl -s 'https://api.notion.com/v1/databases/NOTION_ID_05' \
   -H 'Authorization: Bearer $NOTION_TOKEN' \
   -H 'Notion-Version: 2022-06-28' | python3 -c "
 import json, sys
@@ -293,7 +293,7 @@ Expected: `__contenus` a `Idée source` et `Profil`, `idées` a `Contenus`.
 - [ ] **Step 1: Identifier le profil ACTIF**
 
 ```bash
-curl -s -X POST 'https://api.notion.com/v1/databases/11be579edc0281d9be51f60e0d54328f/query' \
+curl -s -X POST 'https://api.notion.com/v1/databases/NOTION_ID_06/query' \
   -H 'Authorization: Bearer $NOTION_TOKEN' \
   -H 'Notion-Version: 2022-06-28' \
   -H 'Content-Type: application/json' \
@@ -414,7 +414,7 @@ Utiliser `mcp__n8n-mcp__n8n_create_workflow` :
 
 Nodes initiaux :
 1. `Declencheur hebdo lundi 8h` — scheduleTrigger (lundi 8h)
-2. `Requeter profil actif` — httpRequest (POST `https://api.notion.com/v1/databases/11be579edc0281d9be51f60e0d54328f/query`, filter STATUT=ACTIF)
+2. `Requeter profil actif` — httpRequest (POST `https://api.notion.com/v1/databases/NOTION_ID_06/query`, filter STATUT=ACTIF)
 3. `Valider profil present` — code (vérifie résultat non vide, retourne [] si absent)
 
 Code node "Valider profil present" :
@@ -510,7 +510,7 @@ git commit -m "feat: WF1 Veille v2 - structure de base + validation profil Notio
 - [ ] **Step 1: Ajouter query contenus récents (anti-redondance)**
 
 Node 6 : `Requeter contenus recents` — httpRequest
-- POST `https://api.notion.com/v1/databases/11be579edc0281bd9fabc403e4570b6c/query`
+- POST `https://api.notion.com/v1/databases/NOTION_ID_05/query`
 - Filter : status État in ["Programmés", "Publié"]
 - Sort : created_time descending
 - Page size : 10

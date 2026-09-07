@@ -1,0 +1,9 @@
+[submodule "awesome-n8n-templates"]
+	path = awesome-n8n-templates
+	url = https://github.com/enescingoz/awesome-n8n-templates.git
+[submodule "n8n-workflow-templates"]
+	path = n8n-workflow-templates
+	url = https://github.com/Danitilahun/n8n-workflow-templates.git
+[submodule "ultimate-n8n-ai-workflows"]
+	path = ultimate-n8n-ai-workflows
+	url = https://github.com/oxbshw/ultimate-n8n-ai-workflows.git

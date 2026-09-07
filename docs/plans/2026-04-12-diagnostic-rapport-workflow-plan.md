@@ -12,7 +12,7 @@
 **Brief technique:** `<repo-marque>/brand/briefs/brief-technique-n8n-supabase-gemini.md`
 
 **Instance n8n:** `https://n8n.example.com/`
-**Error Workflow existant:** `bAurtiK8UqF7Mlw6`
+**Error Workflow existant:** `N8N_RESOURCE_ID_28`
 
 ---
 
@@ -50,7 +50,7 @@ type: "httpHeaderAuth"
 data: { name: "api-key", value: "<BREVO_API_KEY>" }
 ```
 
-Note : cette credential n'apparait plus dans la liste actuelle (12 credentials). Le workflow "Agent Tool - Query Brevo" (`QqKYt8MNNEujc4ib`) l'utilise — verifier si elle existe encore en inspectant ce workflow. Si elle existe, passer cette etape.
+Note : cette credential n'apparait plus dans la liste actuelle (12 credentials). Le workflow "Agent Tool - Query Brevo" (`N8N_RESOURCE_ID_24`) l'utilise — verifier si elle existe encore en inspectant ce workflow. Si elle existe, passer cette etape.
 
 - [ ] **Step 3 : Creer credential `supabaseServiceRole`** (type `httpHeaderAuth`)
 
@@ -151,7 +151,7 @@ Utiliser `mcp__n8n-mcp__n8n_create_workflow` avec :
     "saveDataErrorExecution": "all",
     "saveDataSuccessExecution": "all",
     "saveManualExecutions": true,
-    "errorWorkflow": "bAurtiK8UqF7Mlw6",
+    "errorWorkflow": "N8N_RESOURCE_ID_28",
     "timezone": "Europe/Paris"
   }
 }
@@ -697,7 +697,7 @@ Utiliser `mcp__n8n-mcp__n8n_update_partial_workflow` pour ajuster les nodes en e
         "typeVersion": 1,
         "position": [-200, -200],
         "parameters": {
-          "content": "## Diagnostic - Generer Rapport\n\nWebhook fire-and-forget declenche par le JS du diagnostic example.com.\n\n**Flux :** Webhook -> Validation -> Scraping Jina (parallele) -> 2x Gemini -> Supabase -> Brevo\n\n**Credentials :** geminiApiKey, supabaseServiceRole, brevoApi\n**Error Workflow :** bAurtiK8UqF7Mlw6",
+          "content": "## Diagnostic - Generer Rapport\n\nWebhook fire-and-forget declenche par le JS du diagnostic example.com.\n\n**Flux :** Webhook -> Validation -> Scraping Jina (parallele) -> 2x Gemini -> Supabase -> Brevo\n\n**Credentials :** geminiApiKey, supabaseServiceRole, brevoApi\n**Error Workflow :** N8N_RESOURCE_ID_28",
           "width": 400,
           "height": 200
         }

@@ -42,16 +42,16 @@ Sources :
 - [Danitilahun/n8n-workflow-templates](https://github.com/Danitilahun/n8n-workflow-templates)
 - [oxbshw/ultimate-n8n-ai-workflows](https://github.com/oxbshw/ultimate-n8n-ai-workflows)
 
-**Les trois bibliothèques ne sont pas versionnées dans ce repo** — ce sont des projets
-tiers avec leurs propres licences. Les cloner à la racine avant de commencer :
+**Les trois bibliothèques sont des sous-modules git**, montés à la racine du repo —
+leur contenu appartient à leurs auteurs et n'est pas redistribué ici.
 
 ```bash
-git clone https://github.com/enescingoz/awesome-n8n-templates.git
-git clone https://github.com/Danitilahun/n8n-workflow-templates.git
-git clone https://github.com/oxbshw/ultimate-n8n-ai-workflows.git
+git submodule update --init --recursive   # les recuperer
+git submodule update --remote             # les mettre a jour
 ```
 
-Elles sont listées dans le `.gitignore`.
+Si les dossiers sont vides, les recherches `Glob`/`Grep` ci-dessous ne renverront rien :
+lancer la première commande avant de commencer.
 
 ### awesome-n8n-templates — Catégories
 

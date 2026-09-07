@@ -70,13 +70,13 @@ WF: Discord Growth Agent (orchestrateur)
         │
         ▼ (sub-workflows via toolWorkflow)
   Phases existantes réutilisées :
-    Phase 1  Personas IA           nzSewA8PtcpMEl0C
-    Phase 2  Sourcing Apollo       RpWez34sQkgnEMMu
-    Phase 3  Scoring Pipeline      xfy4BvkjpuEVzYDs
-    Phase 3b Deep Research         FUlwSl4A0PqVYTNc
-    Phase 4a Generation Emails     Xu5ZoVn8YJXlJGIG
-    Phase 4b Push Lemlist          JX4J7UJunGuOQOcB
-    Phase 9  Conversion Brevo      bJ3hbHbIaul1GdIt
+    Phase 1  Personas IA           N8N_RESOURCE_ID_31
+    Phase 2  Sourcing Apollo       N8N_RESOURCE_ID_25
+    Phase 3  Scoring Pipeline      N8N_RESOURCE_ID_33
+    Phase 3b Deep Research         N8N_RESOURCE_ID_22
+    Phase 4a Generation Emails     N8N_RESOURCE_ID_27
+    Phase 4b Push Lemlist          N8N_RESOURCE_ID_23
+    Phase 9  Conversion Brevo      N8N_RESOURCE_ID_29
         │
         ▼ (data layer)
   Notion (7 DBs) · Brevo CRM · Apollo · Lemlist
@@ -130,12 +130,12 @@ WF: Discord Growth Agent (orchestrateur)
 
 #### `create_offre`
 - **Input :** nom, proposition de valeur, arguments clés, pain points, prix, secteurs cibles
-- **Action :** POST Notion API → base Offres actives (`32ce579e-dc02-814a-aebe-f956748f9fa4`)
+- **Action :** POST Notion API → base Offres actives (`NOTION_ID_07`)
 - **Output :** confirmation + lien Notion
 
 #### `create_persona`
 - **Input :** intitulé poste, secteurs, taille entreprise, offre liée
-- **Action :** POST Notion API → base Personas (`32ce579e-dc02-81e7-b05c-d4b62493c16b`) avec relation vers l'offre
+- **Action :** POST Notion API → base Personas (`NOTION_ID_08`) avec relation vers l'offre
 - **Output :** confirmation + lien Notion
 
 #### `create_deal_brevo`
@@ -406,11 +406,11 @@ RÈGLES:
 | Jina scraping échoue | "Je n'ai pas pu scraper ce site. Donne-moi un autre lien ou des infos manuelles" |
 | Brevo API erreur | Retry 1x, puis message d'erreur explicite |
 | Gemini timeout | Retry avec prompt plus court, sinon "Reformule ta demande" |
-| Sub-workflow échoue | Message Discord + log dans Error Handler (`WZllUF0m1hH7pf9E`) |
+| Sub-workflow échoue | Message Discord + log dans Error Handler (`N8N_RESOURCE_ID_26`) |
 | Prospect introuvable | "Aucun résultat. Veux-tu élargir la recherche ?" |
 | Confirmation non comprise | "Réponds 'oui' pour lancer ou 'non' pour annuler." |
 
-**Error workflow :** le workflow orchestrateur est rattaché à l'Error Handler existant (`WZllUF0m1hH7pf9E`).
+**Error workflow :** le workflow orchestrateur est rattaché à l'Error Handler existant (`N8N_RESOURCE_ID_26`).
 
 ---
 

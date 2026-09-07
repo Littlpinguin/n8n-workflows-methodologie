@@ -94,7 +94,7 @@ Utiliser `n8n_create_workflow` :
     }
   ],
   "connections": {},
-  "settings": { "executionOrder": "v1", "errorWorkflow": "bAurtiK8UqF7Mlw6" },
+  "settings": { "executionOrder": "v1", "errorWorkflow": "N8N_RESOURCE_ID_28" },
   "active": false
 }
 ```
@@ -708,4 +708,4 @@ Si des erreurs apparaissent, consulter `n8n_executions` pour les logs et corrige
 | Google Drive | `N8N_RESOURCE_ID_18` | `googleDriveOAuth2Api` |
 | Google Sheets | `N8N_RESOURCE_ID_03` | `googleSheetsOAuth2Api` |
 | Gemini API | `N8N_RESOURCE_ID_06` | `googlePalmApi` |
-| Error Workflow | `bAurtiK8UqF7Mlw6` | — |
+| Error Workflow | `N8N_RESOURCE_ID_28` | — |

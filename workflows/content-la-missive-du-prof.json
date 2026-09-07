@@ -286,7 +286,7 @@
         "nodeCredentialType": "googleDriveOAuth2Api",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ name: 'Missive du Prof - ' + $json.moisAnnee, mimeType: 'application/vnd.google-apps.document', parents: ['1GjXAwmt8DuVbPJjsWI1ARsZPfSQIpsKv'] }) }}",
+        "jsonBody": "={{ JSON.stringify({ name: 'Missive du Prof - ' + $json.moisAnnee, mimeType: 'application/vnd.google-apps.document', parents: ['GOOGLE_DOC_ID_17'] }) }}",
         "options": {}
       },
       "id": "http-create-doc",
@@ -500,7 +500,7 @@
   "settings": {
     "executionOrder": "v1",
     "timezone": "Europe/Paris",
-    "errorWorkflow": "bAurtiK8UqF7Mlw6"
+    "errorWorkflow": "N8N_RESOURCE_ID_28"
   },
   "tags": ["verified"]
 }

@@ -395,7 +395,7 @@ Le profil Notion reste la source de verite : il pointe vers les bons Google Docs
 
 ### Error Workflow global
 
-Tous les workflows utilisent le meme Error Workflow existant (`WZllUF0m1hH7pf9E`) pour notification par email en cas d'echec critique.
+Tous les workflows utilisent le meme Error Workflow existant (`N8N_RESOURCE_ID_26`) pour notification par email en cas d'echec critique.
 
 ## Stack technique
 

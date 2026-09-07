@@ -189,7 +189,7 @@
       "typeVersion": 2,
       "position": [2266, 400],
       "parameters": {
-        "jsCode": "const response = $json.candidates[0].content.parts[0].text;\nconst faq = JSON.parse(response);\nconst data = $('Construire prompt FAQ').item.json;\n\nif (!faq.question || !faq.answer) {\n  return [];\n}\n\nreturn [{\n  json: {\n    date: new Date().toISOString().slice(0, 16).replace('T', ' '),\n    categorie: data.categorie || 'Autre',\n    question: faq.question,\n    answer: faq.answer,\n    originalFrom: data.originalFrom,\n    originalSubject: data.originalSubject,\n    threadId: data.threadId,\n    faqLabelId: 'Label_5451177273715628836'\n  }\n}];"
+        "jsCode": "const response = $json.candidates[0].content.parts[0].text;\nconst faq = JSON.parse(response);\nconst data = $('Construire prompt FAQ').item.json;\n\nif (!faq.question || !faq.answer) {\n  return [];\n}\n\nreturn [{\n  json: {\n    date: new Date().toISOString().slice(0, 16).replace('T', ' '),\n    categorie: data.categorie || 'Autre',\n    question: faq.question,\n    answer: faq.answer,\n    originalFrom: data.originalFrom,\n    originalSubject: data.originalSubject,\n    threadId: data.threadId,\n    faqLabelId: '<GMAIL_LABEL_ID>'\n  }\n}];"
       }
     },
     {
@@ -330,6 +330,6 @@
   },
   "settings": {
     "executionOrder": "v1",
-    "errorWorkflow": "bAurtiK8UqF7Mlw6"
+    "errorWorkflow": "N8N_RESOURCE_ID_28"
   }
 }

@@ -796,7 +796,7 @@
     "timeSavedMode": "fixed",
     "binaryMode": "separate",
     "timeSavedPerExecution": 20,
-    "errorWorkflow": "bAurtiK8UqF7Mlw6"
+    "errorWorkflow": "N8N_RESOURCE_ID_28"
   },
   "staticData": {
     "node:Détecter nouvelle transcription": {
@@ -818,7 +818,7 @@
     "updatedAt": "2026-02-25T17:17:17.000Z",
     "createdAt": "2026-02-25T17:17:11.263Z",
     "versionId": "4c06efba-2dbf-42ee-aeb5-72e5fadec806",
-    "workflowId": "tVCoRFth09sKXyE8",
+    "workflowId": "N8N_RESOURCE_ID_32",
     "nodes": [
       {
         "parameters": {
@@ -1613,7 +1613,7 @@
       {
         "createdAt": "2026-02-25T17:17:17.716Z",
         "id": 73,
-        "workflowId": "tVCoRFth09sKXyE8",
+        "workflowId": "N8N_RESOURCE_ID_32",
         "versionId": "4c06efba-2dbf-42ee-aeb5-72e5fadec806",
         "event": "activated",
         "userId": "f0076426-ba7b-4097-be5a-9830aa9c1ec6"

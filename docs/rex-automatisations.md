@@ -6,7 +6,7 @@ Retours d'experience sur chaque automatisation. Objectif : capitaliser sur les e
 
 ## 1. Meeting - Analyser et classer - CR Google Meet
 
-**Workflow ID** : `tVCoRFth09sKXyE8`
+**Workflow ID** : `N8N_RESOURCE_ID_32`
 **Date** : 2026-02-17
 **Statut** : En production
 
@@ -95,7 +95,7 @@ const toArray = (v) => Array.isArray(v) ? v : (typeof v === 'string' && v ? [v] 
 
 #### 8. Client non identifie malgre texte correct
 
-**Probleme** : La transcription contenait "counter.bisl" alors que le Google Sheet avait "Conter Biz". Le matching exact echouait.
+**Probleme** : La transcription contenait "durand.cnsl" alors que le Google Sheet avait "Durand Conseil". Le matching exact echouait.
 
 **Correction** : Implementation d'un matching fuzzy avec normalisation (accents, casse, caracteres speciaux) et score de similarite (seuil 0.5).
 
@@ -123,7 +123,7 @@ const toArray = (v) => Array.isArray(v) ? v : (typeof v === 'string' && v ? [v] 
 
 ## 2. Error Handler - Notification erreurs workflows
 
-**Workflow ID** : `bAurtiK8UqF7Mlw6`
+**Workflow ID** : `N8N_RESOURCE_ID_28`
 **Date** : 2026-02-17
 **Statut** : En production
 
@@ -139,7 +139,7 @@ Error Trigger → Code (formater email HTML) → Gmail (envoyer alerte)
 
 ### Configuration
 
-- Activer `errorWorkflow: "bAurtiK8UqF7Mlw6"` dans les settings de chaque workflow a surveiller
+- Activer `errorWorkflow: "N8N_RESOURCE_ID_28"` dans les settings de chaque workflow a surveiller
 - Le workflow doit rester actif en permanence
 - Credential Gmail OAuth2 (`N8N_RESOURCE_ID_10`) partage avec les autres workflows
 
@@ -157,7 +157,7 @@ Error Trigger → Code (formater email HTML) → Gmail (envoyer alerte)
 
 ## 3. Recrutement - Screener CV Automatique
 
-**Workflow ID** : `neQNKFNjSjaQNb72`
+**Workflow ID** : `N8N_RESOURCE_ID_30`
 **Date** : 2026-02-22
 **Statut** : En production
 **Source** : [Nate Herk - Hiring Screener](https://www.youtube.com/watch?v=ig_Ie4MDXFo)
@@ -345,7 +345,7 @@ Schedule Trigger (8h, quotidien)
 | Google Sheet Stats | `GOOGLE_DOC_ID_09` |
 | Google Doc Profil Business | `GOOGLE_DOC_ID_02` |
 | Dossier Drive Profil Business | `GOOGLE_DOC_ID_13` |
-| Error Workflow | `bAurtiK8UqF7Mlw6` |
+| Error Workflow | `N8N_RESOURCE_ID_28` |
 | Gmail OAuth2 | `N8N_RESOURCE_ID_10` |
 | Gemini API | `N8N_RESOURCE_ID_06` |
 
@@ -478,10 +478,10 @@ Schedule Trigger (10h, quotidien)
 |-----------|-----|
 | Workflow | `N8N_RESOURCE_ID_08` |
 | Google Sheet FAQ Base | `GOOGLE_DOC_ID_10` |
-| Label Gmail "FAQ" | `Label_5451177273715628836` |
+| Label Gmail "FAQ" | `<GMAIL_LABEL_ID>` |
 | Google Doc Profil Business | `GOOGLE_DOC_ID_02` |
 | Dossier Drive Profil Business | `GOOGLE_DOC_ID_13` |
-| Error Workflow | `bAurtiK8UqF7Mlw6` |
+| Error Workflow | `N8N_RESOURCE_ID_28` |
 | Gmail OAuth2 | `N8N_RESOURCE_ID_10` |
 | Gemini API | `N8N_RESOURCE_ID_06` |
 | Google Sheets | `N8N_RESOURCE_ID_03` |
@@ -489,7 +489,7 @@ Schedule Trigger (10h, quotidien)
 
 ### Points de vigilance pour la maintenance
 
-- Le label Gmail "FAQ" (`Label_5451177273715628836`) doit exister — cree en one-shot
+- Le label Gmail "FAQ" (`<GMAIL_LABEL_ID>`) doit exister — cree en one-shot
 - Les labels "Client" et "Prospect" doivent etre appliques par Inbox Genie en amont
 - La FAQ Base ne doit pas depasser ~200 entrees pour rester injectee en entier dans le prompt Inbox Genie
 - Le workflow est desactive par defaut — activer une fois valide

@@ -3,7 +3,7 @@
 **Date** : 2026-02-22
 **Source** : [Nate Herk - Hiring Screener](https://www.youtube.com/watch?v=ig_Ie4MDXFo)
 **Statut** : Implémenté
-**Workflow ID** : `neQNKFNjSjaQNb72`
+**Workflow ID** : `N8N_RESOURCE_ID_30`
 
 ## Contexte
 

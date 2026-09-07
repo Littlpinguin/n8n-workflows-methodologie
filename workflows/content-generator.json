@@ -136,7 +136,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const items = $input.all();\nconst promptDocIds = {\n  'LinkedIn': '1RM2kqd95nAuQGsDrQph7nfmbUvpcLivLs_7tyrdWXnA',\n  'Substack Article': '1WNavkoaIQRhLx7MOXW1CkVPcLyOKmR5m0gTmbo_bBOQ',\n  'Substack Notes': '12CHvW9QoNmsNqbEU84spbXJF8kNC4CzndBuAwP4krGg'\n};\n\nreturn items.map(item => {\n  const plateforme = item.json.Plateforme || item.json.plateforme || 'LinkedIn';\n  return {\n    json: {\n      ...item.json,\n      promptDocId: promptDocIds[plateforme] || promptDocIds['LinkedIn']\n    }\n  };\n});"
+        "jsCode": "const items = $input.all();\nconst promptDocIds = {\n  'LinkedIn': 'GOOGLE_DOC_ID_19',\n  'Substack Article': 'GOOGLE_DOC_ID_20',\n  'Substack Notes': 'GOOGLE_DOC_ID_16'\n};\n\nreturn items.map(item => {\n  const plateforme = item.json.Plateforme || item.json.plateforme || 'LinkedIn';\n  return {\n    json: {\n      ...item.json,\n      promptDocId: promptDocIds[plateforme] || promptDocIds['LinkedIn']\n    }\n  };\n});"
       },
       "id": "code-mapper",
       "name": "Mapper prompt ID",
@@ -489,7 +489,7 @@
     "timezone": "Europe/Paris",
     "saveDataErrorExecution": "all",
     "saveDataSuccessExecution": "all",
-    "errorWorkflow": "bAurtiK8UqF7Mlw6"
+    "errorWorkflow": "N8N_RESOURCE_ID_28"
   },
   "tags": ["verified"]
 }

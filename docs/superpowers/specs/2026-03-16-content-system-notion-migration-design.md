@@ -22,11 +22,11 @@ Le Content System actuel repose sur un Google Sheet "Content Calendar" (2 onglet
 
 | Base | ID | Rôle |
 |---|---|---|
-| `idées` | `11be579e-dc02-8139-acca-d85e74d31bd0` | Capture d'idées et veille |
-| `__contenus` | `11be579e-dc02-81bd-9fab-c403e4570b6c` | Pipeline de publications |
-| `profils` | `11be579e-dc02-81d9-be51-f60e0d54328f` | Profils auteurs multi-variables |
+| `idées` | `NOTION_ID_02` | Capture d'idées et veille |
+| `__contenus` | `NOTION_ID_03` | Pipeline de publications |
+| `profils` | `NOTION_ID_04` | Profils auteurs multi-variables |
 
-Page parent : `11be579e-dc02-812c-bbfe-f6201b089c24`
+Page parent : `NOTION_ID_01`
 
 ---
 
