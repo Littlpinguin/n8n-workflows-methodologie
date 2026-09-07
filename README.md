@@ -94,12 +94,10 @@ les workflows, la documentation.
 
 Les trois bibliothèques de référence sont des **sous-modules**, pas des copies : leur
 contenu n'est pas redistribué ici, seul un pointeur vers le dépôt d'origine l'est. Chacune
-reste la propriété de ses auteurs, sous ses propres conditions — et certaines ne déclarent
-aucune licence explicite, ce qui vaut « tous droits réservés » par défaut. Elles sont donc
-utilisables comme référence de conception, pas comme contenu à réutiliser tel quel.
+reste sous la licence de ses auteurs, à vérifier à la source avant toute réutilisation.
 
-| Bibliothèque | Auteur |
-|---|---|
-| [awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates) | enescingoz |
-| [n8n-workflow-templates](https://github.com/Danitilahun/n8n-workflow-templates) | Danitilahun |
-| [ultimate-n8n-ai-workflows](https://github.com/oxbshw/ultimate-n8n-ai-workflows) | oxbshw |
+| Bibliothèque | Auteur | Licence |
+|---|---|---|
+| [awesome-n8n-templates](https://github.com/enescingoz/awesome-n8n-templates) | Enes Cingoz | CC BY 4.0 |
+| [n8n-workflow-templates](https://github.com/Danitilahun/n8n-workflow-templates) | Danitilahun | voir le dépôt |
+| [ultimate-n8n-ai-workflows](https://github.com/oxbshw/ultimate-n8n-ai-workflows) | oxbshw | voir le dépôt |
