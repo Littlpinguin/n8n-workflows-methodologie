@@ -1,0 +1,676 @@
+{
+  "name": "Recrutement - Screener CV Automatique",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "hour": 8
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {
+          "labelIds": [
+            "<GMAIL_LABEL_ID>"
+          ],
+          "readStatus": "unread"
+        },
+        "options": {
+          "downloadAttachments": true
+        }
+      },
+      "id": "gmail-trigger",
+      "name": "Recevoir CV par email",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.2,
+      "position": [896, -16],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "N8N_RESOURCE_ID_10",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "inputDataFieldName": "attachment_0",
+        "name": "={{ $json.subject }} - CV",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "GOOGLE_DOC_ID_14",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "drive-upload",
+      "name": "Uploader CV dans Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [1232, -16],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_18",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.mimeType }}",
+                    "rightValue": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Word"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.mimeType }}",
+                    "rightValue": "application/pdf",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "PDF"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.mimeType }}",
+                    "rightValue": "text/plain",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Texte"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "switch-filetype",
+      "name": "Type de fichier",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [1504, -32]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://www.googleapis.com/drive/v2/files/{{ $json.id }}/copy?convert=true&supportsAllDrives=true",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "options": {}
+      },
+      "id": "convert-word-gdoc",
+      "name": "Convertir Word en Google Doc",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1856, -224],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_18",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {
+          "googleFileConversion": {
+            "conversion": {
+              "docsToFormat": "application/pdf"
+            }
+          }
+        }
+      },
+      "id": "download-gdoc",
+      "name": "Telecharger Google Doc",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [2080, -224],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_18",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "id": "extract-word",
+      "name": "Extraire texte Word",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [2304, -224]
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "download-pdf",
+      "name": "Telecharger PDF",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [2080, -32],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_18",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "id": "extract-pdf",
+      "name": "Extraire texte PDF",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [2304, -32]
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "download-txt",
+      "name": "Telecharger TXT",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [2080, 160],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_18",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "destinationKey": "text",
+        "options": {}
+      },
+      "id": "extract-txt",
+      "name": "Extraire texte TXT",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [2304, 160]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "name": "resume",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "standardiser-cv",
+      "name": "Standardiser CV",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2528, -32]
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "limit": 1,
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "GOOGLE_DOC_ID_12",
+            "mode": "id"
+          }
+        },
+        "options": {}
+      },
+      "id": "chercher-fiche",
+      "name": "Chercher fiche de poste",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [2896, -32],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_18",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {
+          "googleFileConversion": {
+            "conversion": {
+              "docsToFormat": "text/plain"
+            }
+          }
+        }
+      },
+      "id": "download-fiche",
+      "name": "Telecharger fiche de poste",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [3168, -32],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_18",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "destinationKey": "text",
+        "options": {}
+      },
+      "id": "extract-fiche",
+      "name": "Extraire texte fiche",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [3424, -32]
+    },
+    {
+      "parameters": {
+        "jsCode": "const resume = $('Standardiser CV').item.json.resume;\nconst jobDescription = $json.text;\n\nconst systemPrompt = `# Overview\nTu es un recruteur technique expert specialise dans l'analyse de CV. On te donne une fiche de poste et un CV de candidat.\nAnalyse le CV par rapport a la fiche de poste et produis un rapport de screening detaille.\n\nEvalue l'alignement des competences techniques ET la comprehension du contexte metier.\nBase-toi uniquement sur le contenu reel du CV et de la fiche — pas d'hypotheses.\n\n# Output JSON\nRetourne un objet JSON avec exactement ces champs :\n- candidate_strengths: array de strings (liste des forces specifiques du candidat par rapport au poste)\n- candidate_weaknesses: array de strings (liste des faiblesses ou lacunes identifiees)\n- risk_factor: objet avec { score: \"Low\" ou \"Medium\" ou \"High\", explanation: string decrivant le pire scenario si ce candidat est recrute }\n- reward_factor: objet avec { score: \"Low\" ou \"Medium\" ou \"High\", explanation: string decrivant le meilleur scenario et si le candidat est un fit court-terme ou long-terme }\n- overall_fit_rating: integer de 0 a 10 (0 = aucun match, 10 = match parfait, pas de decimales)\n- justification_for_rating: string detaillee expliquant pourquoi ce score, avec references specifiques au CV et a la fiche de poste`;\n\nconst userPrompt = `## Fiche de poste\\n\\n${jobDescription}\\n\\n## CV du candidat\\n\\n${resume}`;\n\nconst requestBody = {\n  contents: [{ role: 'user', parts: [{ text: userPrompt }] }],\n  systemInstruction: { parts: [{ text: systemPrompt }] },\n  generationConfig: {\n    temperature: 0.3,\n    responseMimeType: 'application/json'\n  }\n};\n\nreturn [{ json: { requestBody, resume } }];"
+      },
+      "id": "build-prompt-analyse",
+      "name": "Construire prompt analyse",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3744, -32]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.requestBody) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "gemini-analyse",
+      "name": "Analyser CV via Gemini",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3968, -32],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "N8N_RESOURCE_ID_06",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $json.candidates[0].content.parts[0].text;\nconst analysis = JSON.parse(response);\nconst resume = $('Construire prompt analyse').item.json.resume;\n\nreturn [{ json: { analysis, resume } }];"
+      },
+      "id": "parse-analyse",
+      "name": "Parser resultat analyse",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [4192, -32]
+    },
+    {
+      "parameters": {
+        "jsCode": "const resume = $json.resume;\nconst analysis = $json.analysis;\n\nconst systemPrompt = 'Extrais les informations de contact du candidat depuis son CV. Retourne un JSON avec exactement ces champs: first_name (string, prenom), last_name (string, nom de famille), email (string, adresse email). Si une info est introuvable, retourne une chaine vide.';\n\nconst requestBody = {\n  contents: [{ role: 'user', parts: [{ text: resume }] }],\n  systemInstruction: { parts: [{ text: systemPrompt }] },\n  generationConfig: {\n    temperature: 0.1,\n    responseMimeType: 'application/json'\n  }\n};\n\nreturn [{ json: { requestBody, analysis } }];"
+      },
+      "id": "build-prompt-extraction",
+      "name": "Construire prompt extraction",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [4416, -32]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.requestBody) }}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "gemini-extraction",
+      "name": "Extraire infos candidat",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [4640, -32],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "N8N_RESOURCE_ID_06",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $json.candidates[0].content.parts[0].text;\nconst candidate = JSON.parse(response);\nconst analysis = $('Construire prompt extraction').item.json.analysis;\n\nreturn [{ json: { candidate, analysis } }];"
+      },
+      "id": "parse-extraction",
+      "name": "Parser infos candidat",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [4864, -32]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "GOOGLE_DOC_ID_11",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Feuille 1"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{ $now.format('yyyy-MM-dd HH:mm') }}",
+            "Prénom": "={{ $json.candidate.first_name }}",
+            "Nom": "={{ $json.candidate.last_name }}",
+            "Email": "={{ $json.candidate.email }}",
+            "Lien CV": "={{ $('Uploader CV dans Drive').item.json.webViewLink }}",
+            "Forces": "={{ $json.analysis.candidate_strengths.join('\\n\\n') }}",
+            "Faiblesses": "={{ $json.analysis.candidate_weaknesses.join('\\n\\n') }}",
+            "Risque": "={{ $json.analysis.risk_factor.score + '\\n\\n' + $json.analysis.risk_factor.explanation }}",
+            "Opportunité": "={{ $json.analysis.reward_factor.score + '\\n\\n' + $json.analysis.reward_factor.explanation }}",
+            "Score (0-10)": "={{ $json.analysis.overall_fit_rating }}",
+            "Justification": "={{ $json.analysis.justification_for_rating }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "sheets-append",
+      "name": "Enregistrer resultats",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [5104, -32],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_03",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "markAsRead",
+        "messageId": "={{ $('Recevoir CV par email').item.json.id }}"
+      },
+      "id": "gmail-mark-read",
+      "name": "Marquer email lu",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [5360, -32],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "N8N_RESOURCE_ID_10",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## 1. Reception CV\nGmail Trigger filtre par label \"Recrutement\"\nEmails non lus uniquement\nTelechargement automatique des pieces jointes\nPoll toutes les minutes",
+        "height": 280,
+        "width": 360,
+        "color": 2
+      },
+      "id": "note-reception",
+      "name": "Note Reception",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [768, -128]
+    },
+    {
+      "parameters": {
+        "content": "## 2. Upload Drive\nSauvegarde le CV dans\nRecrutement/CVs/\nNomme: {sujet email} - CV",
+        "height": 280,
+        "color": 2
+      },
+      "id": "note-upload",
+      "name": "Note Upload",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1168, -128]
+    },
+    {
+      "parameters": {
+        "content": "## 3. Type de fichier\nRoute vers Word, PDF ou TXT\nselon le mimeType du fichier uploade",
+        "height": 280,
+        "color": 6
+      },
+      "id": "note-switch",
+      "name": "Note Switch",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1440, -128]
+    },
+    {
+      "parameters": {
+        "content": "## 4. Extraction texte\nWord: conversion Google Doc puis PDF puis texte\nPDF: extraction directe\nTXT: lecture directe",
+        "height": 700,
+        "width": 956,
+        "color": 4
+      },
+      "id": "note-extraction",
+      "name": "Note Extraction",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1744, -384]
+    },
+    {
+      "parameters": {
+        "content": "## 5. Fiche de poste\nLit le fichier dans Recrutement/Fiche Active/\nSupporte Google Doc, PDF, TXT\nPour changer de poste: remplacer le fichier dans le dossier\nPas de verification - un fichier doit toujours etre present",
+        "height": 280,
+        "width": 860,
+        "color": 3
+      },
+      "id": "note-fiche-poste",
+      "name": "Note Fiche Poste",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [2752, -160]
+    },
+    {
+      "parameters": {
+        "content": "## 6. Analyse Gemini\nAppel 1: Scoring CV vs fiche de poste\n(forces, faiblesses, risque, opportunite, score 0-10)\nAppel 2: Extraction nom, prenom, email du candidat\nModele: Gemini 2.5 Flash, JSON force",
+        "height": 312,
+        "width": 1320,
+        "color": 5
+      },
+      "id": "note-gemini",
+      "name": "Note Gemini",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [3664, -192]
+    },
+    {
+      "parameters": {
+        "content": "## 7. Resultats + Cloture\nEnregistre dans Google Sheet \"Resume Screener\"\nMarque l'email comme lu pour eviter les doublons",
+        "height": 280,
+        "width": 480,
+        "color": 7
+      },
+      "id": "note-resultats",
+      "name": "Note Resultats",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [5040, -160]
+    }
+  ],
+  "connections": {
+    "Recevoir CV par email": {
+      "main": [[{"node": "Uploader CV dans Drive", "type": "main", "index": 0}]]
+    },
+    "Uploader CV dans Drive": {
+      "main": [[{"node": "Type de fichier", "type": "main", "index": 0}]]
+    },
+    "Type de fichier": {
+      "main": [
+        [{"node": "Convertir Word en Google Doc", "type": "main", "index": 0}],
+        [{"node": "Telecharger PDF", "type": "main", "index": 0}],
+        [{"node": "Telecharger TXT", "type": "main", "index": 0}]
+      ]
+    },
+    "Convertir Word en Google Doc": {
+      "main": [[{"node": "Telecharger Google Doc", "type": "main", "index": 0}]]
+    },
+    "Telecharger Google Doc": {
+      "main": [[{"node": "Extraire texte Word", "type": "main", "index": 0}]]
+    },
+    "Telecharger PDF": {
+      "main": [[{"node": "Extraire texte PDF", "type": "main", "index": 0}]]
+    },
+    "Telecharger TXT": {
+      "main": [[{"node": "Extraire texte TXT", "type": "main", "index": 0}]]
+    },
+    "Extraire texte Word": {
+      "main": [[{"node": "Standardiser CV", "type": "main", "index": 0}]]
+    },
+    "Extraire texte PDF": {
+      "main": [[{"node": "Standardiser CV", "type": "main", "index": 0}]]
+    },
+    "Extraire texte TXT": {
+      "main": [[{"node": "Standardiser CV", "type": "main", "index": 0}]]
+    },
+    "Standardiser CV": {
+      "main": [[{"node": "Chercher fiche de poste", "type": "main", "index": 0}]]
+    },
+    "Chercher fiche de poste": {
+      "main": [[{"node": "Telecharger fiche de poste", "type": "main", "index": 0}]]
+    },
+    "Telecharger fiche de poste": {
+      "main": [[{"node": "Extraire texte fiche", "type": "main", "index": 0}]]
+    },
+    "Extraire texte fiche": {
+      "main": [[{"node": "Construire prompt analyse", "type": "main", "index": 0}]]
+    },
+    "Construire prompt analyse": {
+      "main": [[{"node": "Analyser CV via Gemini", "type": "main", "index": 0}]]
+    },
+    "Analyser CV via Gemini": {
+      "main": [[{"node": "Parser resultat analyse", "type": "main", "index": 0}]]
+    },
+    "Parser resultat analyse": {
+      "main": [[{"node": "Construire prompt extraction", "type": "main", "index": 0}]]
+    },
+    "Construire prompt extraction": {
+      "main": [[{"node": "Extraire infos candidat", "type": "main", "index": 0}]]
+    },
+    "Extraire infos candidat": {
+      "main": [[{"node": "Parser infos candidat", "type": "main", "index": 0}]]
+    },
+    "Parser infos candidat": {
+      "main": [[{"node": "Enregistrer resultats", "type": "main", "index": 0}]]
+    },
+    "Enregistrer resultats": {
+      "main": [[{"node": "Marquer email lu", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "bAurtiK8UqF7Mlw6",
+    "callerPolicy": "workflowsFromSameOwner"
+  }
+}

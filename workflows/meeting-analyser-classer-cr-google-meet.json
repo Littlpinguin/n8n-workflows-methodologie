@@ -1,0 +1,1623 @@
+{
+  "name": "Meeting - Analyser et classer - CR Google Meet",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "GOOGLE_DOC_ID_15",
+          "mode": "list",
+          "cachedResultName": "Meet Recordings",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/GOOGLE_DOC_ID_15"
+        },
+        "event": "fileCreated",
+        "options": {}
+      },
+      "id": "trigger-drive",
+      "name": "Détecter nouvelle transcription",
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        80
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_18",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "mode": "id",
+          "value": "={{ $json.id }}"
+        },
+        "options": {
+          "googleFileConversion": {
+            "conversion": {
+              "docsToFormat": "text/plain"
+            }
+          }
+        }
+      },
+      "id": "download-file",
+      "name": "Télécharger transcription",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        224,
+        80
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_18",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "options": {}
+      },
+      "id": "extract-text",
+      "name": "Extraire texte",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        448,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "GOOGLE_DOC_ID_07",
+          "mode": "list",
+          "cachedResultName": "clients-reference",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/GOOGLE_DOC_ID_07/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 369444576,
+          "mode": "list",
+          "cachedResultName": "Clients",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/GOOGLE_DOC_ID_07/edit#gid=369444576"
+        },
+        "options": {}
+      },
+      "id": "get-clients",
+      "name": "Récupérer liste clients",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        672,
+        80
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_03",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const fileItem = $('Extraire texte').first();\nlet transcription = fileItem.json.data || fileItem.json.text || '';\n\nif (!transcription || transcription.startsWith('PK')) {\n  const dlItem = $('T\\u00e9l\\u00e9charger transcription').first();\n  if (dlItem.binary && dlItem.binary.data) {\n    transcription = Buffer.from(dlItem.binary.data.data, 'base64').toString('utf-8');\n  } else {\n    transcription = dlItem.json.data || dlItem.json.text || JSON.stringify(dlItem.json);\n  }\n}\n\nconst transcriptIdx = transcription.indexOf('Transcription');\nif (transcriptIdx > 0) {\n  const afterTranscript = transcription.substring(transcriptIdx);\n  const timeIdx = afterTranscript.indexOf('00:00:00');\n  if (timeIdx > 0) {\n    transcription = afterTranscript.substring(timeIdx);\n  }\n}\n\nconst clients = $('R\\u00e9cup\\u00e9rer liste clients').all().map(item => ({\n  nom: item.json['Nom client'],\n  domaine: item.json['Domaine email'],\n  dossierId: item.json['Dossier Drive ID']\n}));\nconst fichierOriginalId = $('D\\u00e9tecter nouvelle transcription').first().json.id;\nconst fichierOriginalNom = $('D\\u00e9tecter nouvelle transcription').first().json.name;\n\nreturn [{\n  json: {\n    transcription,\n    clients: JSON.stringify(clients),\n    fichierOriginalId,\n    fichierOriginalNom\n  }\n}];"
+      },
+      "id": "combine-data",
+      "name": "Combiner données",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        896,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const toArray = (v) => Array.isArray(v) ? v : (typeof v === 'string' && v ? [v] : []);\n\nconst item = $input.first();\nconst raw = item.json.text || item.json.output;\nlet analyse;\nif (typeof raw === 'string') {\n  const cleaned = raw.replace(/```json\\n?/g, '').replace(/```/g, '').trim();\n  analyse = JSON.parse(cleaned);\n} else {\n  analyse = raw;\n}\n\nconst client = analyse.client || 'Inconnu';\nconst contexte = analyse.contexte || '';\nconst langue = analyse.langue || 'fr';\nconst decisionsCles = toArray(analyse.decisions_cles);\nconst prochainesEtapes = toArray(analyse.prochaines_etapes);\nconst participants = (analyse.participants || []).filter(p =>\n  p.nom && p.nom.toLowerCase().indexOf('alex') === -1\n);\n\nconst isFr = langue === 'fr';\nconst lblDecisions = isFr ? 'D\\u00e9cisions cl\\u00e9s valid\\u00e9es' : 'Key Strategic Pillars Validated';\nconst lblNextSteps = isFr ? 'Prochaines \\u00e9tapes imm\\u00e9diates' : 'Immediate Next Steps';\nconst lblGreeting = isFr ? 'Bonjour' : 'Hi';\nconst lblClosing = isFr ? 'Cordialement,' : 'Best regards,';\nconst lblFollowing = isFr ? 'Suite \\u00e0 notre derni\\u00e8re r\\u00e9union' : 'Following our last discussion';\n\nreturn participants.map(p => {\n  const actions = toArray(p.actions);\n\n  // Filter prochaines_etapes relevant to this participant\n  const etapesParticipant = prochainesEtapes.filter(e =>\n    e.responsable && e.responsable.toLowerCase().includes(p.nom.split(' ')[0].toLowerCase())\n  );\n\n  const html = `<div style=\"font-family: Helvetica, Arial, sans-serif; font-size: 12pt; color: #333; line-height: 1.6; max-width: 600px;\">\n  <p>${lblGreeting},</p>\n\n  <p>${lblFollowing}. ${contexte}</p>\n\n  <p style=\"font-weight: bold; text-decoration: underline; margin-top: 20px;\">${lblDecisions}</p>\n  <ul style=\"padding-left: 24px;\">\n    ${decisionsCles.map(d => '<li style=\"margin-bottom: 6px;\">' + (d.point || d) + (d.detail ? ' : ' + d.detail : '') + (d.tbc ? ' <strong>(TBC)</strong>' : '') + '</li>').join('\\n    ')}\n  </ul>\n\n  <p style=\"font-weight: bold; text-decoration: underline; margin-top: 20px;\">${lblNextSteps}</p>\n  <ul style=\"padding-left: 24px;\">\n    ${actions.map(a => '<li style=\"margin-bottom: 6px;\">' + a + '</li>').join('\\n    ')}\n    ${etapesParticipant.map(e => '<li style=\"margin-bottom: 6px;\">' + e.action + (e.echeance ? ' (' + e.echeance + ')' : '') + '</li>').join('\\n    ')}\n  </ul>\n\n  <br/>\n  <p>${lblClosing}<br/><strong>Alex</strong></p>\n</div>`;\n\n  return {\n    json: {\n      email: p.email,\n      nom: p.nom,\n      sujet: (isFr ? 'Compte rendu - ' : 'Meeting summary - ') + client,\n      corps: html\n    }\n  };\n});"
+      },
+      "id": "prep-emails",
+      "name": "Préparer emails participants",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1792,
+        -208
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "={{ $json.sujet }}",
+        "emailType": "html",
+        "message": "={{ $json.corps }}",
+        "options": {
+          "sendTo": "={{ $json.email }}"
+        }
+      },
+      "id": "send-email-participant",
+      "name": "Créer brouillon participant",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        2016,
+        -208
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 1000,
+      "webhookId": "e04db88a-5924-4aa6-9bb7-2456119020f1",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "N8N_RESOURCE_ID_10",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const toArray = (v) => Array.isArray(v) ? v : (typeof v === 'string' && v ? [v] : []);\n\nconst item = $input.first();\nconst raw = item.json.text || item.json.output;\nlet analyse;\nif (typeof raw === 'string') {\n  const cleaned = raw.replace(/```json\\n?/g, '').replace(/```/g, '').trim();\n  analyse = JSON.parse(cleaned);\n} else {\n  analyse = raw;\n}\n\nconst client = analyse.client || 'Inconnu';\nconst resume = analyse.resume || '';\nconst contexte = analyse.contexte || '';\nconst decisionsCles = toArray(analyse.decisions_cles);\nconst prochainesEtapes = toArray(analyse.prochaines_etapes);\nconst actionsAlex = toArray(analyse.actions_alex);\nconst pointsACreuser = toArray(analyse.points_a_creuser);\nconst aj = analyse.analyse_alex || {};\nconst typeReunion = aj.type_reunion || 'N/A';\nconst sousTexte = toArray(aj.sous_texte);\nconst dynamiques = toArray(aj.dynamiques);\nconst signauxFaibles = toArray(aj.signaux_faibles);\nconst conseils = toArray(aj.conseils_strategiques);\nconst tempRelation = aj.temperature_relation || '';\n\nconst dateStr = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });\nconst formatAction = (a) => typeof a === 'string' ? a : (a.titre || '') + (a.details ? ' \\u2014 ' + a.details : '');\n\n// Color for temperature\nconst tempColors = { 'excellente': '#27ae60', 'bonne': '#2ecc71', 'a surveiller': '#f39c12', 'tendue': '#e67e22', 'critique': '#e74c3c' };\nconst tempColor = tempColors[tempRelation.split(' ')[0].toLowerCase()] || '#666';\n\nconst html = `<div style=\"font-family: Helvetica, Arial, sans-serif; font-size: 12pt; color: #333; line-height: 1.6; max-width: 650px;\">\n\n  <p style=\"font-size: 14pt; font-weight: bold;\">R\\u00e9cap \\u2014 ${client} \\u2014 ${dateStr}</p>\n  <p style=\"color: #666; font-size: 11pt;\">Type : <strong>${typeReunion}</strong> &nbsp;|&nbsp; Relation : <strong style=\"color: ${tempColor};\">${tempRelation}</strong></p>\n\n  <p>${contexte}</p>\n\n  <hr style=\"border: none; border-top: 1px solid #ddd; margin: 24px 0;\"/>\n\n  <p style=\"font-weight: bold; text-decoration: underline; font-size: 13pt;\">R\\u00e9sum\\u00e9 ex\\u00e9cutif</p>\n  <p>${resume}</p>\n\n  <p style=\"font-weight: bold; text-decoration: underline; font-size: 13pt; margin-top: 24px;\">D\\u00e9cisions cl\\u00e9s</p>\n  <ul style=\"padding-left: 24px;\">\n    ${decisionsCles.map(d => '<li style=\"margin-bottom: 6px;\"><strong>' + (d.point || d) + '</strong>' + (d.detail ? ' : ' + d.detail : '') + (d.tbc ? ' <strong style=\"color: #e67e22;\">(TBC)</strong>' : '') + '</li>').join('\\n    ')}\n  </ul>\n\n  <p style=\"font-weight: bold; text-decoration: underline; font-size: 13pt; margin-top: 24px;\">Prochaines \\u00e9tapes</p>\n  <ul style=\"padding-left: 24px;\">\n    ${prochainesEtapes.map(e => '<li style=\"margin-bottom: 6px;\"><strong>' + (e.responsable || '?') + '</strong> : ' + e.action + (e.echeance ? ' <em>(' + e.echeance + ')</em>' : '') + '</li>').join('\\n    ')}\n  </ul>\n\n  <p style=\"font-weight: bold; text-decoration: underline; font-size: 13pt; margin-top: 24px;\">Mes actions</p>\n  <ul style=\"padding-left: 24px;\">\n    ${actionsAlex.map(a => '<li style=\"margin-bottom: 6px;\">' + formatAction(a) + '</li>').join('\\n    ')}\n  </ul>\n\n  <hr style=\"border: none; border-top: 2px solid #3498db; margin: 30px 0 24px;\"/>\n  <p style=\"font-size: 14pt; font-weight: bold; color: #3498db;\">Analyse &amp; Conseil</p>\n\n  ${sousTexte.length > 0 ? '<p style=\"font-weight: bold; text-decoration: underline; font-size: 13pt; margin-top: 20px;\">Sous-texte &amp; implicite</p>\\n  <ul style=\"padding-left: 24px;\">' + sousTexte.map(s => '<li style=\"margin-bottom: 6px;\">' + s + '</li>').join('\\n    ') + '</ul>' : ''}\n\n  ${dynamiques.length > 0 ? '<p style=\"font-weight: bold; text-decoration: underline; font-size: 13pt; margin-top: 20px;\">Dynamiques relationnelles</p>\\n  <ul style=\"padding-left: 24px;\">' + dynamiques.map(d => '<li style=\"margin-bottom: 6px;\">' + d + '</li>').join('\\n    ') + '</ul>' : ''}\n\n  ${signauxFaibles.length > 0 ? '<p style=\"font-weight: bold; text-decoration: underline; font-size: 13pt; margin-top: 20px;\">Signaux faibles</p>\\n  <ul style=\"padding-left: 24px;\">' + signauxFaibles.map(s => '<li style=\"margin-bottom: 6px;\">\\u26a0\\ufe0f ' + s + '</li>').join('\\n    ') + '</ul>' : ''}\n\n  ${conseils.length > 0 ? '<p style=\"font-weight: bold; text-decoration: underline; font-size: 13pt; margin-top: 20px; color: #3498db;\">Conseils strat\\u00e9giques</p>\\n  <ul style=\"padding-left: 24px;\">' + conseils.map(c => '<li style=\"margin-bottom: 6px;\">\\u2192 ' + c + '</li>').join('\\n    ') + '</ul>' : ''}\n\n  ${pointsACreuser.length > 0 ? '<p style=\"font-weight: bold; text-decoration: underline; font-size: 13pt; margin-top: 20px;\">Points \\u00e0 creuser</p>\\n  <ul style=\"padding-left: 24px;\">' + pointsACreuser.map(p => '<li style=\"margin-bottom: 6px;\">' + p + '</li>').join('\\n    ') + '</ul>' : ''}\n\n</div>`;\n\nreturn [{\n  json: {\n    sujet: '[R\\u00e9cap] ' + client + ' \\u2014 ' + typeReunion + ' \\u2014 ' + dateStr,\n    corps: html\n  }\n}];"
+      },
+      "id": "prep-recap",
+      "name": "Préparer email récap",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1792,
+        -16
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "contact@example.com",
+        "subject": "={{ $json.sujet }}",
+        "message": "={{ $json.corps }}",
+        "options": {}
+      },
+      "id": "send-recap",
+      "name": "Envoyer récap Alex",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        2016,
+        -16
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 1000,
+      "webhookId": "beea4056-817f-4d7c-9806-4d6077df53dc",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "N8N_RESOURCE_ID_10",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const toArray = (v) => Array.isArray(v) ? v : (typeof v === 'string' && v ? [v] : []);\n\nconst item = $input.first();\nconst raw = item.json.text || item.json.output;\nlet analyse;\nif (typeof raw === 'string') {\n  const cleaned = raw.replace(/```json\\n?/g, '').replace(/```/g, '').trim();\n  analyse = JSON.parse(cleaned);\n} else {\n  analyse = raw;\n}\n\nconst client = analyse.client || 'Inconnu';\nconst actionsAlex = toArray(analyse.actions_alex);\n\nconst fichierNom = $('Construire prompt Gemini').first().json.fichierOriginalNom || '';\nlet dateReunion = '';\nconst dateMatch = fichierNom.match(/(\\d{4})[\\/_ ](\\d{2})[\\/_ ](\\d{2})/);\nif (dateMatch) {\n  dateReunion = dateMatch[1] + '-' + dateMatch[2] + '-' + dateMatch[3] + 'T00:00:00.000Z';\n}\n\nreturn actionsAlex.map(a => {\n  const titre = typeof a === 'string' ? a : (a.titre || '');\n  const details = typeof a === 'string' ? '' : (a.details || '');\n  return {\n    json: {\n      titre: titre,\n      notes: '*' + client + '*' + (details ? ' \\u2014 ' + details : ''),\n      dateReunion\n    }\n  };\n});"
+      },
+      "id": "prep-tasks",
+      "name": "Préparer tâches",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1792,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "task": "MDExNjA2MjcwMTQxMzAzMzI1NzE6MDow",
+        "title": "={{ $json.titre }}",
+        "additionalFields": {
+          "dueDate": "={{ $json.dateReunion }}",
+          "notes": "={{ $json.notes }}"
+        }
+      },
+      "id": "create-task",
+      "name": "Créer tâche Google",
+      "type": "n8n-nodes-base.googleTasks",
+      "typeVersion": 1,
+      "position": [
+        2016,
+        176
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 1000,
+      "credentials": {
+        "googleTasksOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_16",
+          "name": "Google Tasks account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first();\nconst raw = item.json.text || item.json.output;\nlet analyse;\nif (typeof raw === 'string') {\n  const cleaned = raw.replace(/```json\\n?/g, '').replace(/```/g, '').trim();\n  analyse = JSON.parse(cleaned);\n} else {\n  analyse = raw;\n}\n\nconst clients = JSON.parse($('Combiner donn\\u00e9es').first().json.clients);\nconst fichierOriginalId = $('Combiner donn\\u00e9es').first().json.fichierOriginalId;\n\nconst clientNom = analyse.client || analyse.client_concerne || 'INCONNU';\n\nfunction normalize(s) {\n  return s.toLowerCase()\n    .normalize('NFD').replace(/[\\u0300-\\u036f]/g, '')\n    .replace(/[^a-z0-9]/g, '');\n}\n\nfunction similarity(a, b) {\n  const na = normalize(a);\n  const nb = normalize(b);\n  if (na === nb) return 1;\n  if (na.includes(nb) || nb.includes(na)) return 0.8;\n  const len = Math.max(na.length, nb.length);\n  if (len === 0) return 0;\n  let matches = 0;\n  const short = na.length <= nb.length ? na : nb;\n  const long = na.length <= nb.length ? nb : na;\n  for (let i = 0; i < short.length; i++) {\n    const idx = long.indexOf(short[i]);\n    if (idx !== -1) { matches++; }\n  }\n  const charSim = matches / len;\n  let seq = 0, maxSeq = 0;\n  for (let i = 0; i < short.length; i++) {\n    if (long.includes(short.substring(i, i + 2)) && i + 2 <= short.length) {\n      seq++;\n      maxSeq = Math.max(maxSeq, seq);\n    } else { seq = 0; }\n  }\n  const seqBonus = maxSeq / len * 0.3;\n  return Math.min(charSim + seqBonus, 1);\n}\n\nlet clientData = clients.find(c => normalize(c.nom) === normalize(clientNom));\n\nif (!clientData && clientNom !== 'INCONNU') {\n  let bestScore = 0;\n  let bestMatch = null;\n  for (const c of clients) {\n    const score = similarity(clientNom, c.nom);\n    if (score > bestScore) {\n      bestScore = score;\n      bestMatch = c;\n    }\n  }\n  if (bestScore >= 0.5) {\n    clientData = bestMatch;\n  }\n}\n\nif (!clientData) {\n  throw new Error('Client \"' + clientNom + '\" non trouve dans le Google Sheet (meme avec matching phonetique). Le fichier reste en place.');\n}\n\nconst now = new Date();\nconst jour = String(now.getDate()).padStart(2, '0');\nconst mois = String(now.getMonth() + 1).padStart(2, '0');\nconst annee = now.getFullYear();\nconst nouveauNom = jour + '-' + mois + '-' + annee + '-' + clientData.nom.toLowerCase().replace(/\\s+/g, '-');\n\nreturn [{\n  json: {\n    clientNom: clientData.nom,\n    dossierId: clientData.dossierId,\n    fichierOriginalId,\n    nouveauNom\n  }\n}];"
+      },
+      "id": "identify-client",
+      "name": "Identifier dossier client",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1792,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "meetings",
+        "limit": 1,
+        "filter": {
+          "folderId": {
+            "mode": "id",
+            "value": "={{ $json.dossierId }}"
+          },
+          "whatToSearch": "folders"
+        },
+        "options": {}
+      },
+      "id": "search-meetings",
+      "name": "Chercher dossier meetings",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        2016,
+        368
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 1000,
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_18",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 3,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "condition-1",
+              "operator": {
+                "type": "string",
+                "operation": "exists"
+              },
+              "leftValue": "={{ $json.id }}",
+              "rightValue": ""
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-meetings-exists",
+      "name": "Dossier meetings existe ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2240,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "name": "meetings",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive",
+          "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+        },
+        "folderId": {
+          "mode": "id",
+          "value": "={{ $('Identifier dossier client').first().json.dossierId }}"
+        },
+        "options": {}
+      },
+      "id": "create-meetings-folder",
+      "name": "Créer dossier meetings",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        2464,
+        448
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 1000,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_18",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "let meetingsDossierId;\n\ntry {\n  meetingsDossierId = $('Dossier meetings existe ?').first().json.id;\n} catch(e) {}\n\nif (!meetingsDossierId) {\n  try {\n    meetingsDossierId = $('Créer dossier meetings').first().json.id;\n  } catch(e) {}\n}\n\nconst fichierOriginalId = $('Identifier dossier client').first().json.fichierOriginalId;\nconst nouveauNom = $('Identifier dossier client').first().json.nouveauNom;\n\nreturn [{\n  json: { meetingsDossierId, fichierOriginalId, nouveauNom }\n}];"
+      },
+      "id": "merge-folder-path",
+      "name": "Fusionner chemin dossier",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2688,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "move",
+        "fileId": {
+          "mode": "id",
+          "value": "={{ $json.fichierOriginalId }}"
+        },
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive",
+          "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+        },
+        "folderId": {
+          "mode": "id",
+          "value": "={{ $json.meetingsDossierId }}"
+        }
+      },
+      "id": "move-rename",
+      "name": "Déplacer et renommer",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        2912,
+        368
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 1000,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_18",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## TRIGGER\nSurveille le dossier Meet Recordings dans Google Drive.\nDès qu'une nouvelle transcription Gemini apparaît, le workflow se déclenche.\n\n**À configurer :**\n- Dossier Google Drive à surveiller\n- Credentials Google Drive OAuth2"
+      },
+      "id": "note-trigger",
+      "name": "Note - Trigger",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -208,
+        -144
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## ANALYSE IA (Gemini)\n- Reçoit la transcription + liste clients\n- Identifie le client par domaine email\n- Déduit les rôles des participants\n- Extrait : résumé, points clés, actions\n- Output JSON structuré"
+      },
+      "id": "note-ia",
+      "name": "Note - Analyse IA",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1056,
+        -144
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## SORTIES\n1. Email personnalisé par participant (récap + actions)\n2. Email récap complet à contact@example.com\n3. Tâches créées dans Google Tasks\n4. Fichier classé dans /clients/{nom}/meetings/"
+      },
+      "id": "note-sorties",
+      "name": "Note - Sorties",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1456,
+        -400
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## CLASSEMENT DRIVE\n- Identifie le client via Google Sheet\n- Vérifie si /meetings/ existe, le crée sinon\n- Déplace et renomme : JJ-MM-AAAA-nom-client\n- Si client INCONNU : erreur + fichier reste en place"
+      },
+      "id": "note-drive",
+      "name": "Note - Classement Drive",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1456,
+        608
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first();\nconst transcription = item.json.transcription;\nconst clients = item.json.clients;\n\nconst systemPrompt = `Tu es un consultant senior qui redige des comptes rendus de reunion strategiques et actionnables.\nTu ne dois JAMAIS inventer de contenu. Chaque information doit provenir DIRECTEMENT de la transcription.\nTu FILTRES le bruit : small talk, digressions personnelles, discussions informelles ne doivent PAS apparaitre dans les champs destines aux participants.\nTu te concentres sur les decisions strategiques, les engagements pris et les prochaines etapes concretes.\n\nEN PLUS, tu produis une analyse approfondie reservee a Alex (contact@example.com), le consultant qui pilote la relation client. Cette analyse doit :\n- Decoder le sous-texte et l'implicite de la reunion (ce qui n'a pas ete dit mais qui transparait)\n- Identifier les dynamiques interpersonnelles et les rapports de force\n- Detecter les signaux faibles (hesitations, resistances, enthousiasme, non-dits)\n- Classifier le type de reunion et adapter les conseils en consequence\n- Fournir des recommandations strategiques concretes pour la prochaine etape\n\nReponds uniquement avec du JSON brut valide.`;\n\nconst userPrompt = `Analyse UNIQUEMENT la transcription ci-dessous. Ne genere AUCUNE information fictive.\n\nTranscription :\n---\n${transcription}\n---\n\nClients connus :\n${clients}\n\nINSTRUCTIONS :\n1. Identifie les participants (noms avant les ':'). Identifie le client en matchant noms/domaines avec la liste (erreurs de transcription possibles).\n2. FILTRE LE BRUIT pour les champs participants : ignore le small talk. Ne garde que l'essentiel strategique.\n3. Detecte la langue principale de la reunion. Les champs destines aux participants doivent etre dans CETTE langue.\n4. Les champs d'analyse pour Alex (analyse_alex) sont TOUJOURS en francais.\n\nCHAMPS JSON :\n\n--- Champs pour les emails participants (langue de la reunion) ---\n- client : nom EXACT de la liste clients\n- langue : \"fr\" ou \"en\"\n- contexte : une phrase de contexte situant la reunion\n- decisions_cles : array {point: string, detail: string, tbc: boolean}\n- prochaines_etapes : array {responsable: string, action: string, echeance: string|null}\n- participants : array {nom, email (null si inconnu), role_deduit, points_cles (array: contributions strategiques uniquement), actions (array: prochaines etapes concretes)}\n\n--- Champs pour le recap Alex (TOUJOURS en francais) ---\n- resume : synthese executive 2-3 phrases\n- actions_alex : array {titre, details}\n- points_a_creuser : array strings\n- analyse_alex : objet avec les champs suivants :\n  - type_reunion : string (ex: \"commerciale\", \"point hebdomadaire\", \"kick-off\", \"strategique\", \"suivi projet\", \"negociation\", etc.)\n  - sous_texte : array strings - ce qui n'a pas ete dit explicitement mais qui transparait (hesitations, resistances, motivations cachees, enjeux politiques internes)\n  - dynamiques : array strings - observations sur les rapports de force, les alliances, qui influence qui, les tensions eventuelles\n  - signaux_faibles : array strings - indices subtils a surveiller (changement de ton, sujets evites, enthousiasme particulier, formulations evasives)\n  - conseils_strategiques : array strings - recommandations concretes adaptees au TYPE de reunion :\n    * Si commerciale : prochaine etape du cycle de vente, objections a anticiper, levier de closing\n    * Si point hebdo/suivi : priorites suggerees, risques identifies, points de vigilance\n    * Si kick-off : jalons critiques, quick wins, pieces a risque\n    * Si negociation : position de force/faiblesse, concessions possibles, red lines\n    * Si strategique : arbitrages recommandes, timing optimal, allies a mobiliser\n  - temperature_relation : string - evaluation de la sante de la relation client (\"excellente\", \"bonne\", \"a surveiller\", \"tendue\", \"critique\") avec une justification courte`;\n\nconst requestBody = {\n  contents: [{ role: 'user', parts: [{ text: userPrompt }] }],\n  systemInstruction: { parts: [{ text: systemPrompt }] },\n  generationConfig: { temperature: 0.4, responseMimeType: 'application/json' }\n};\n\nreturn [{ json: { requestBody, fichierOriginalId: item.json.fichierOriginalId, fichierOriginalNom: item.json.fichierOriginalNom, clients: item.json.clients } }];"
+      },
+      "id": "build-prompt",
+      "name": "Construire prompt Gemini",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.requestBody) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "call-gemini",
+      "name": "Appeler Gemini API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1344,
+        80
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "N8N_RESOURCE_ID_06",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first();\nconst response = item.json;\n\nlet text = '';\nif (response.candidates && response.candidates[0]) {\n  const parts = response.candidates[0].content.parts;\n  text = parts.map(p => p.text).join('');\n}\n\nlet analyse;\nconst cleaned = text.replace(/```json\\n?/g, '').replace(/```/g, '').trim();\ntry {\n  analyse = JSON.parse(cleaned);\n} catch (e) {\n  const fixed = cleaned.replace(/,\\s*}/g, '}').replace(/,\\s*]/g, ']');\n  try {\n    analyse = JSON.parse(fixed);\n  } catch (e2) {\n    throw new Error('JSON invalide de Gemini: ' + cleaned.substring(0, 500));\n  }\n}\n\nreturn [{ json: { text: JSON.stringify(analyse), analyse, clients: $('Construire prompt Gemini').first().json.clients, fichierOriginalId: $('Construire prompt Gemini').first().json.fichierOriginalId } }];"
+      },
+      "id": "parse-gemini",
+      "name": "Parser reponse Gemini",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1568,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "fileId": {
+          "mode": "id",
+          "value": "={{ $json.id }}"
+        },
+        "newUpdatedFileName": "={{ $('Fusionner chemin dossier').first().json.nouveauNom }}",
+        "options": {}
+      },
+      "id": "c744960b-48a7-4fca-89dc-c1508c32d492",
+      "name": "Renommer fichier",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        3136,
+        368
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 1000,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_18",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 3,
+        "unit": "minutes"
+      },
+      "id": "wait-transcription",
+      "name": "Attendre transcription",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        16,
+        80
+      ],
+      "webhookId": "18b7d4f5-4116-4799-9886-58de9ea8696e"
+    }
+  ],
+  "connections": {
+    "Télécharger transcription": {
+      "main": [
+        [
+          {
+            "node": "Extraire texte",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraire texte": {
+      "main": [
+        [
+          {
+            "node": "Récupérer liste clients",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Récupérer liste clients": {
+      "main": [
+        [
+          {
+            "node": "Combiner données",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combiner données": {
+      "main": [
+        [
+          {
+            "node": "Construire prompt Gemini",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Construire prompt Gemini": {
+      "main": [
+        [
+          {
+            "node": "Appeler Gemini API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Appeler Gemini API": {
+      "main": [
+        [
+          {
+            "node": "Parser reponse Gemini",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parser reponse Gemini": {
+      "main": [
+        [
+          {
+            "node": "Préparer emails participants",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Préparer email récap",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Préparer tâches",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Identifier dossier client",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Préparer emails participants": {
+      "main": [
+        [
+          {
+            "node": "Créer brouillon participant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Préparer email récap": {
+      "main": [
+        [
+          {
+            "node": "Envoyer récap Alex",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Préparer tâches": {
+      "main": [
+        [
+          {
+            "node": "Créer tâche Google",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Identifier dossier client": {
+      "main": [
+        [
+          {
+            "node": "Chercher dossier meetings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chercher dossier meetings": {
+      "main": [
+        [
+          {
+            "node": "Dossier meetings existe ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dossier meetings existe ?": {
+      "main": [
+        [
+          {
+            "node": "Fusionner chemin dossier",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Créer dossier meetings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Créer dossier meetings": {
+      "main": [
+        [
+          {
+            "node": "Fusionner chemin dossier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fusionner chemin dossier": {
+      "main": [
+        [
+          {
+            "node": "Déplacer et renommer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Déplacer et renommer": {
+      "main": [
+        [
+          {
+            "node": "Renommer fichier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Détecter nouvelle transcription": {
+      "main": [
+        [
+          {
+            "node": "Attendre transcription",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Attendre transcription": {
+      "main": [
+        [
+          {
+            "node": "Télécharger transcription",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "binaryMode": "separate",
+    "timeSavedPerExecution": 20,
+    "errorWorkflow": "bAurtiK8UqF7Mlw6"
+  },
+  "staticData": {
+    "node:Détecter nouvelle transcription": {
+      "lastTimeChecked": "2026-02-25T17:17:17Z"
+    }
+  },
+  "pinData": {},
+  "activeVersionId": "4c06efba-2dbf-42ee-aeb5-72e5fadec806",
+  "versionCounter": 198,
+  "tags": [
+    {
+      "updatedAt": "2026-02-22T15:02:23.193Z",
+      "createdAt": "2026-02-22T15:02:23.193Z",
+      "id": "N8N_RESOURCE_ID_05",
+      "name": "verified"
+    }
+  ],
+  "activeVersion": {
+    "updatedAt": "2026-02-25T17:17:17.000Z",
+    "createdAt": "2026-02-25T17:17:11.263Z",
+    "versionId": "4c06efba-2dbf-42ee-aeb5-72e5fadec806",
+    "workflowId": "tVCoRFth09sKXyE8",
+    "nodes": [
+      {
+        "parameters": {
+          "pollTimes": {
+            "item": [
+              {
+                "mode": "everyMinute"
+              }
+            ]
+          },
+          "triggerOn": "specificFolder",
+          "folderToWatch": {
+            "__rl": true,
+            "value": "GOOGLE_DOC_ID_15",
+            "mode": "list",
+            "cachedResultName": "Meet Recordings",
+            "cachedResultUrl": "https://drive.google.com/drive/folders/GOOGLE_DOC_ID_15"
+          },
+          "event": "fileCreated",
+          "options": {}
+        },
+        "id": "trigger-drive",
+        "name": "Détecter nouvelle transcription",
+        "type": "n8n-nodes-base.googleDriveTrigger",
+        "typeVersion": 1,
+        "position": [
+          -160,
+          80
+        ],
+        "credentials": {
+          "googleDriveOAuth2Api": {
+            "id": "N8N_RESOURCE_ID_18",
+            "name": "Google Drive account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "operation": "download",
+          "fileId": {
+            "mode": "id",
+            "value": "={{ $json.id }}"
+          },
+          "options": {
+            "googleFileConversion": {
+              "conversion": {
+                "docsToFormat": "text/plain"
+              }
+            }
+          }
+        },
+        "id": "download-file",
+        "name": "Télécharger transcription",
+        "type": "n8n-nodes-base.googleDrive",
+        "typeVersion": 3,
+        "position": [
+          224,
+          80
+        ],
+        "credentials": {
+          "googleDriveOAuth2Api": {
+            "id": "N8N_RESOURCE_ID_18",
+            "name": "Google Drive account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "operation": "text",
+          "options": {}
+        },
+        "id": "extract-text",
+        "name": "Extraire texte",
+        "type": "n8n-nodes-base.extractFromFile",
+        "typeVersion": 1.1,
+        "position": [
+          448,
+          80
+        ]
+      },
+      {
+        "parameters": {
+          "documentId": {
+            "__rl": true,
+            "value": "GOOGLE_DOC_ID_07",
+            "mode": "list",
+            "cachedResultName": "clients-reference",
+            "cachedResultUrl": "https://docs.google.com/spreadsheets/d/GOOGLE_DOC_ID_07/edit?usp=drivesdk"
+          },
+          "sheetName": {
+            "__rl": true,
+            "value": 369444576,
+            "mode": "list",
+            "cachedResultName": "Clients",
+            "cachedResultUrl": "https://docs.google.com/spreadsheets/d/GOOGLE_DOC_ID_07/edit#gid=369444576"
+          },
+          "options": {}
+        },
+        "id": "get-clients",
+        "name": "Récupérer liste clients",
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.7,
+        "position": [
+          672,
+          80
+        ],
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "N8N_RESOURCE_ID_03",
+            "name": "Google Sheets account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const fileItem = $('Extraire texte').first();\nlet transcription = fileItem.json.data || fileItem.json.text || '';\n\nif (!transcription || transcription.startsWith('PK')) {\n  const dlItem = $('T\\u00e9l\\u00e9charger transcription').first();\n  if (dlItem.binary && dlItem.binary.data) {\n    transcription = Buffer.from(dlItem.binary.data.data, 'base64').toString('utf-8');\n  } else {\n    transcription = dlItem.json.data || dlItem.json.text || JSON.stringify(dlItem.json);\n  }\n}\n\nconst transcriptIdx = transcription.indexOf('Transcription');\nif (transcriptIdx > 0) {\n  const afterTranscript = transcription.substring(transcriptIdx);\n  const timeIdx = afterTranscript.indexOf('00:00:00');\n  if (timeIdx > 0) {\n    transcription = afterTranscript.substring(timeIdx);\n  }\n}\n\nconst clients = $('R\\u00e9cup\\u00e9rer liste clients').all().map(item => ({\n  nom: item.json['Nom client'],\n  domaine: item.json['Domaine email'],\n  dossierId: item.json['Dossier Drive ID']\n}));\nconst fichierOriginalId = $('D\\u00e9tecter nouvelle transcription').first().json.id;\nconst fichierOriginalNom = $('D\\u00e9tecter nouvelle transcription').first().json.name;\n\nreturn [{\n  json: {\n    transcription,\n    clients: JSON.stringify(clients),\n    fichierOriginalId,\n    fichierOriginalNom\n  }\n}];"
+        },
+        "id": "combine-data",
+        "name": "Combiner données",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          896,
+          80
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const toArray = (v) => Array.isArray(v) ? v : (typeof v === 'string' && v ? [v] : []);\n\nconst item = $input.first();\nconst raw = item.json.text || item.json.output;\nlet analyse;\nif (typeof raw === 'string') {\n  const cleaned = raw.replace(/```json\\n?/g, '').replace(/```/g, '').trim();\n  analyse = JSON.parse(cleaned);\n} else {\n  analyse = raw;\n}\n\nconst client = analyse.client || 'Inconnu';\nconst contexte = analyse.contexte || '';\nconst langue = analyse.langue || 'fr';\nconst decisionsCles = toArray(analyse.decisions_cles);\nconst prochainesEtapes = toArray(analyse.prochaines_etapes);\nconst participants = (analyse.participants || []).filter(p =>\n  p.nom && p.nom.toLowerCase().indexOf('alex') === -1\n);\n\nconst isFr = langue === 'fr';\nconst lblDecisions = isFr ? 'D\\u00e9cisions cl\\u00e9s valid\\u00e9es' : 'Key Strategic Pillars Validated';\nconst lblNextSteps = isFr ? 'Prochaines \\u00e9tapes imm\\u00e9diates' : 'Immediate Next Steps';\nconst lblGreeting = isFr ? 'Bonjour' : 'Hi';\nconst lblClosing = isFr ? 'Cordialement,' : 'Best regards,';\nconst lblFollowing = isFr ? 'Suite \\u00e0 notre derni\\u00e8re r\\u00e9union' : 'Following our last discussion';\n\nreturn participants.map(p => {\n  const actions = toArray(p.actions);\n\n  // Filter prochaines_etapes relevant to this participant\n  const etapesParticipant = prochainesEtapes.filter(e =>\n    e.responsable && e.responsable.toLowerCase().includes(p.nom.split(' ')[0].toLowerCase())\n  );\n\n  const html = `<div style=\"font-family: Helvetica, Arial, sans-serif; font-size: 12pt; color: #333; line-height: 1.6; max-width: 600px;\">\n  <p>${lblGreeting},</p>\n\n  <p>${lblFollowing}. ${contexte}</p>\n\n  <p style=\"font-weight: bold; text-decoration: underline; margin-top: 20px;\">${lblDecisions}</p>\n  <ul style=\"padding-left: 24px;\">\n    ${decisionsCles.map(d => '<li style=\"margin-bottom: 6px;\">' + (d.point || d) + (d.detail ? ' : ' + d.detail : '') + (d.tbc ? ' <strong>(TBC)</strong>' : '') + '</li>').join('\\n    ')}\n  </ul>\n\n  <p style=\"font-weight: bold; text-decoration: underline; margin-top: 20px;\">${lblNextSteps}</p>\n  <ul style=\"padding-left: 24px;\">\n    ${actions.map(a => '<li style=\"margin-bottom: 6px;\">' + a + '</li>').join('\\n    ')}\n    ${etapesParticipant.map(e => '<li style=\"margin-bottom: 6px;\">' + e.action + (e.echeance ? ' (' + e.echeance + ')' : '') + '</li>').join('\\n    ')}\n  </ul>\n\n  <br/>\n  <p>${lblClosing}<br/><strong>Alex</strong></p>\n</div>`;\n\n  return {\n    json: {\n      email: p.email,\n      nom: p.nom,\n      sujet: (isFr ? 'Compte rendu - ' : 'Meeting summary - ') + client,\n      corps: html\n    }\n  };\n});"
+        },
+        "id": "prep-emails",
+        "name": "Préparer emails participants",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1792,
+          -208
+        ]
+      },
+      {
+        "parameters": {
+          "resource": "draft",
+          "subject": "={{ $json.sujet }}",
+          "emailType": "html",
+          "message": "={{ $json.corps }}",
+          "options": {
+            "sendTo": "={{ $json.email }}"
+          }
+        },
+        "id": "send-email-participant",
+        "name": "Créer brouillon participant",
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.2,
+        "position": [
+          2016,
+          -208
+        ],
+        "retryOnFail": true,
+        "maxTries": 2,
+        "waitBetweenTries": 1000,
+        "webhookId": "e04db88a-5924-4aa6-9bb7-2456119020f1",
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "N8N_RESOURCE_ID_10",
+            "name": "Gmail account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const toArray = (v) => Array.isArray(v) ? v : (typeof v === 'string' && v ? [v] : []);\n\nconst item = $input.first();\nconst raw = item.json.text || item.json.output;\nlet analyse;\nif (typeof raw === 'string') {\n  const cleaned = raw.replace(/```json\\n?/g, '').replace(/```/g, '').trim();\n  analyse = JSON.parse(cleaned);\n} else {\n  analyse = raw;\n}\n\nconst client = analyse.client || 'Inconnu';\nconst resume = analyse.resume || '';\nconst contexte = analyse.contexte || '';\nconst decisionsCles = toArray(analyse.decisions_cles);\nconst prochainesEtapes = toArray(analyse.prochaines_etapes);\nconst actionsAlex = toArray(analyse.actions_alex);\nconst pointsACreuser = toArray(analyse.points_a_creuser);\nconst aj = analyse.analyse_alex || {};\nconst typeReunion = aj.type_reunion || 'N/A';\nconst sousTexte = toArray(aj.sous_texte);\nconst dynamiques = toArray(aj.dynamiques);\nconst signauxFaibles = toArray(aj.signaux_faibles);\nconst conseils = toArray(aj.conseils_strategiques);\nconst tempRelation = aj.temperature_relation || '';\n\nconst dateStr = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });\nconst formatAction = (a) => typeof a === 'string' ? a : (a.titre || '') + (a.details ? ' \\u2014 ' + a.details : '');\n\n// Color for temperature\nconst tempColors = { 'excellente': '#27ae60', 'bonne': '#2ecc71', 'a surveiller': '#f39c12', 'tendue': '#e67e22', 'critique': '#e74c3c' };\nconst tempColor = tempColors[tempRelation.split(' ')[0].toLowerCase()] || '#666';\n\nconst html = `<div style=\"font-family: Helvetica, Arial, sans-serif; font-size: 12pt; color: #333; line-height: 1.6; max-width: 650px;\">\n\n  <p style=\"font-size: 14pt; font-weight: bold;\">R\\u00e9cap \\u2014 ${client} \\u2014 ${dateStr}</p>\n  <p style=\"color: #666; font-size: 11pt;\">Type : <strong>${typeReunion}</strong> &nbsp;|&nbsp; Relation : <strong style=\"color: ${tempColor};\">${tempRelation}</strong></p>\n\n  <p>${contexte}</p>\n\n  <hr style=\"border: none; border-top: 1px solid #ddd; margin: 24px 0;\"/>\n\n  <p style=\"font-weight: bold; text-decoration: underline; font-size: 13pt;\">R\\u00e9sum\\u00e9 ex\\u00e9cutif</p>\n  <p>${resume}</p>\n\n  <p style=\"font-weight: bold; text-decoration: underline; font-size: 13pt; margin-top: 24px;\">D\\u00e9cisions cl\\u00e9s</p>\n  <ul style=\"padding-left: 24px;\">\n    ${decisionsCles.map(d => '<li style=\"margin-bottom: 6px;\"><strong>' + (d.point || d) + '</strong>' + (d.detail ? ' : ' + d.detail : '') + (d.tbc ? ' <strong style=\"color: #e67e22;\">(TBC)</strong>' : '') + '</li>').join('\\n    ')}\n  </ul>\n\n  <p style=\"font-weight: bold; text-decoration: underline; font-size: 13pt; margin-top: 24px;\">Prochaines \\u00e9tapes</p>\n  <ul style=\"padding-left: 24px;\">\n    ${prochainesEtapes.map(e => '<li style=\"margin-bottom: 6px;\"><strong>' + (e.responsable || '?') + '</strong> : ' + e.action + (e.echeance ? ' <em>(' + e.echeance + ')</em>' : '') + '</li>').join('\\n    ')}\n  </ul>\n\n  <p style=\"font-weight: bold; text-decoration: underline; font-size: 13pt; margin-top: 24px;\">Mes actions</p>\n  <ul style=\"padding-left: 24px;\">\n    ${actionsAlex.map(a => '<li style=\"margin-bottom: 6px;\">' + formatAction(a) + '</li>').join('\\n    ')}\n  </ul>\n\n  <hr style=\"border: none; border-top: 2px solid #3498db; margin: 30px 0 24px;\"/>\n  <p style=\"font-size: 14pt; font-weight: bold; color: #3498db;\">Analyse &amp; Conseil</p>\n\n  ${sousTexte.length > 0 ? '<p style=\"font-weight: bold; text-decoration: underline; font-size: 13pt; margin-top: 20px;\">Sous-texte &amp; implicite</p>\\n  <ul style=\"padding-left: 24px;\">' + sousTexte.map(s => '<li style=\"margin-bottom: 6px;\">' + s + '</li>').join('\\n    ') + '</ul>' : ''}\n\n  ${dynamiques.length > 0 ? '<p style=\"font-weight: bold; text-decoration: underline; font-size: 13pt; margin-top: 20px;\">Dynamiques relationnelles</p>\\n  <ul style=\"padding-left: 24px;\">' + dynamiques.map(d => '<li style=\"margin-bottom: 6px;\">' + d + '</li>').join('\\n    ') + '</ul>' : ''}\n\n  ${signauxFaibles.length > 0 ? '<p style=\"font-weight: bold; text-decoration: underline; font-size: 13pt; margin-top: 20px;\">Signaux faibles</p>\\n  <ul style=\"padding-left: 24px;\">' + signauxFaibles.map(s => '<li style=\"margin-bottom: 6px;\">\\u26a0\\ufe0f ' + s + '</li>').join('\\n    ') + '</ul>' : ''}\n\n  ${conseils.length > 0 ? '<p style=\"font-weight: bold; text-decoration: underline; font-size: 13pt; margin-top: 20px; color: #3498db;\">Conseils strat\\u00e9giques</p>\\n  <ul style=\"padding-left: 24px;\">' + conseils.map(c => '<li style=\"margin-bottom: 6px;\">\\u2192 ' + c + '</li>').join('\\n    ') + '</ul>' : ''}\n\n  ${pointsACreuser.length > 0 ? '<p style=\"font-weight: bold; text-decoration: underline; font-size: 13pt; margin-top: 20px;\">Points \\u00e0 creuser</p>\\n  <ul style=\"padding-left: 24px;\">' + pointsACreuser.map(p => '<li style=\"margin-bottom: 6px;\">' + p + '</li>').join('\\n    ') + '</ul>' : ''}\n\n</div>`;\n\nreturn [{\n  json: {\n    sujet: '[R\\u00e9cap] ' + client + ' \\u2014 ' + typeReunion + ' \\u2014 ' + dateStr,\n    corps: html\n  }\n}];"
+        },
+        "id": "prep-recap",
+        "name": "Préparer email récap",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1792,
+          -16
+        ]
+      },
+      {
+        "parameters": {
+          "sendTo": "contact@example.com",
+          "subject": "={{ $json.sujet }}",
+          "message": "={{ $json.corps }}",
+          "options": {}
+        },
+        "id": "send-recap",
+        "name": "Envoyer récap Alex",
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.2,
+        "position": [
+          2016,
+          -16
+        ],
+        "retryOnFail": true,
+        "maxTries": 2,
+        "waitBetweenTries": 1000,
+        "webhookId": "beea4056-817f-4d7c-9806-4d6077df53dc",
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "N8N_RESOURCE_ID_10",
+            "name": "Gmail account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const toArray = (v) => Array.isArray(v) ? v : (typeof v === 'string' && v ? [v] : []);\n\nconst item = $input.first();\nconst raw = item.json.text || item.json.output;\nlet analyse;\nif (typeof raw === 'string') {\n  const cleaned = raw.replace(/```json\\n?/g, '').replace(/```/g, '').trim();\n  analyse = JSON.parse(cleaned);\n} else {\n  analyse = raw;\n}\n\nconst client = analyse.client || 'Inconnu';\nconst actionsAlex = toArray(analyse.actions_alex);\n\nconst fichierNom = $('Construire prompt Gemini').first().json.fichierOriginalNom || '';\nlet dateReunion = '';\nconst dateMatch = fichierNom.match(/(\\d{4})[\\/_ ](\\d{2})[\\/_ ](\\d{2})/);\nif (dateMatch) {\n  dateReunion = dateMatch[1] + '-' + dateMatch[2] + '-' + dateMatch[3] + 'T00:00:00.000Z';\n}\n\nreturn actionsAlex.map(a => {\n  const titre = typeof a === 'string' ? a : (a.titre || '');\n  const details = typeof a === 'string' ? '' : (a.details || '');\n  return {\n    json: {\n      titre: titre,\n      notes: '*' + client + '*' + (details ? ' \\u2014 ' + details : ''),\n      dateReunion\n    }\n  };\n});"
+        },
+        "id": "prep-tasks",
+        "name": "Préparer tâches",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1792,
+          176
+        ]
+      },
+      {
+        "parameters": {
+          "task": "MDExNjA2MjcwMTQxMzAzMzI1NzE6MDow",
+          "title": "={{ $json.titre }}",
+          "additionalFields": {
+            "dueDate": "={{ $json.dateReunion }}",
+            "notes": "={{ $json.notes }}"
+          }
+        },
+        "id": "create-task",
+        "name": "Créer tâche Google",
+        "type": "n8n-nodes-base.googleTasks",
+        "typeVersion": 1,
+        "position": [
+          2016,
+          176
+        ],
+        "retryOnFail": true,
+        "maxTries": 2,
+        "waitBetweenTries": 1000,
+        "credentials": {
+          "googleTasksOAuth2Api": {
+            "id": "N8N_RESOURCE_ID_16",
+            "name": "Google Tasks account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const item = $input.first();\nconst raw = item.json.text || item.json.output;\nlet analyse;\nif (typeof raw === 'string') {\n  const cleaned = raw.replace(/```json\\n?/g, '').replace(/```/g, '').trim();\n  analyse = JSON.parse(cleaned);\n} else {\n  analyse = raw;\n}\n\nconst clients = JSON.parse($('Combiner donn\\u00e9es').first().json.clients);\nconst fichierOriginalId = $('Combiner donn\\u00e9es').first().json.fichierOriginalId;\n\nconst clientNom = analyse.client || analyse.client_concerne || 'INCONNU';\n\nfunction normalize(s) {\n  return s.toLowerCase()\n    .normalize('NFD').replace(/[\\u0300-\\u036f]/g, '')\n    .replace(/[^a-z0-9]/g, '');\n}\n\nfunction similarity(a, b) {\n  const na = normalize(a);\n  const nb = normalize(b);\n  if (na === nb) return 1;\n  if (na.includes(nb) || nb.includes(na)) return 0.8;\n  const len = Math.max(na.length, nb.length);\n  if (len === 0) return 0;\n  let matches = 0;\n  const short = na.length <= nb.length ? na : nb;\n  const long = na.length <= nb.length ? nb : na;\n  for (let i = 0; i < short.length; i++) {\n    const idx = long.indexOf(short[i]);\n    if (idx !== -1) { matches++; }\n  }\n  const charSim = matches / len;\n  let seq = 0, maxSeq = 0;\n  for (let i = 0; i < short.length; i++) {\n    if (long.includes(short.substring(i, i + 2)) && i + 2 <= short.length) {\n      seq++;\n      maxSeq = Math.max(maxSeq, seq);\n    } else { seq = 0; }\n  }\n  const seqBonus = maxSeq / len * 0.3;\n  return Math.min(charSim + seqBonus, 1);\n}\n\nlet clientData = clients.find(c => normalize(c.nom) === normalize(clientNom));\n\nif (!clientData && clientNom !== 'INCONNU') {\n  let bestScore = 0;\n  let bestMatch = null;\n  for (const c of clients) {\n    const score = similarity(clientNom, c.nom);\n    if (score > bestScore) {\n      bestScore = score;\n      bestMatch = c;\n    }\n  }\n  if (bestScore >= 0.5) {\n    clientData = bestMatch;\n  }\n}\n\nif (!clientData) {\n  throw new Error('Client \"' + clientNom + '\" non trouve dans le Google Sheet (meme avec matching phonetique). Le fichier reste en place.');\n}\n\nconst now = new Date();\nconst jour = String(now.getDate()).padStart(2, '0');\nconst mois = String(now.getMonth() + 1).padStart(2, '0');\nconst annee = now.getFullYear();\nconst nouveauNom = jour + '-' + mois + '-' + annee + '-' + clientData.nom.toLowerCase().replace(/\\s+/g, '-');\n\nreturn [{\n  json: {\n    clientNom: clientData.nom,\n    dossierId: clientData.dossierId,\n    fichierOriginalId,\n    nouveauNom\n  }\n}];"
+        },
+        "id": "identify-client",
+        "name": "Identifier dossier client",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1792,
+          368
+        ]
+      },
+      {
+        "parameters": {
+          "resource": "fileFolder",
+          "queryString": "meetings",
+          "limit": 1,
+          "filter": {
+            "folderId": {
+              "mode": "id",
+              "value": "={{ $json.dossierId }}"
+            },
+            "whatToSearch": "folders"
+          },
+          "options": {}
+        },
+        "id": "search-meetings",
+        "name": "Chercher dossier meetings",
+        "type": "n8n-nodes-base.googleDrive",
+        "typeVersion": 3,
+        "position": [
+          2016,
+          368
+        ],
+        "retryOnFail": true,
+        "maxTries": 2,
+        "waitBetweenTries": 1000,
+        "alwaysOutputData": true,
+        "credentials": {
+          "googleDriveOAuth2Api": {
+            "id": "N8N_RESOURCE_ID_18",
+            "name": "Google Drive account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "version": 3,
+              "leftValue": "",
+              "caseSensitive": true,
+              "typeValidation": "strict"
+            },
+            "conditions": [
+              {
+                "id": "condition-1",
+                "operator": {
+                  "type": "string",
+                  "operation": "exists"
+                },
+                "leftValue": "={{ $json.id }}",
+                "rightValue": ""
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "if-meetings-exists",
+        "name": "Dossier meetings existe ?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          2240,
+          368
+        ]
+      },
+      {
+        "parameters": {
+          "resource": "folder",
+          "name": "meetings",
+          "driveId": {
+            "__rl": true,
+            "value": "My Drive",
+            "mode": "list",
+            "cachedResultName": "My Drive",
+            "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+          },
+          "folderId": {
+            "mode": "id",
+            "value": "={{ $('Identifier dossier client').first().json.dossierId }}"
+          },
+          "options": {}
+        },
+        "id": "create-meetings-folder",
+        "name": "Créer dossier meetings",
+        "type": "n8n-nodes-base.googleDrive",
+        "typeVersion": 3,
+        "position": [
+          2464,
+          448
+        ],
+        "retryOnFail": true,
+        "maxTries": 2,
+        "waitBetweenTries": 1000,
+        "credentials": {
+          "googleDriveOAuth2Api": {
+            "id": "N8N_RESOURCE_ID_18",
+            "name": "Google Drive account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "let meetingsDossierId;\n\ntry {\n  meetingsDossierId = $('Dossier meetings existe ?').first().json.id;\n} catch(e) {}\n\nif (!meetingsDossierId) {\n  try {\n    meetingsDossierId = $('Créer dossier meetings').first().json.id;\n  } catch(e) {}\n}\n\nconst fichierOriginalId = $('Identifier dossier client').first().json.fichierOriginalId;\nconst nouveauNom = $('Identifier dossier client').first().json.nouveauNom;\n\nreturn [{\n  json: { meetingsDossierId, fichierOriginalId, nouveauNom }\n}];"
+        },
+        "id": "merge-folder-path",
+        "name": "Fusionner chemin dossier",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2688,
+          368
+        ]
+      },
+      {
+        "parameters": {
+          "operation": "move",
+          "fileId": {
+            "mode": "id",
+            "value": "={{ $json.fichierOriginalId }}"
+          },
+          "driveId": {
+            "__rl": true,
+            "value": "My Drive",
+            "mode": "list",
+            "cachedResultName": "My Drive",
+            "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+          },
+          "folderId": {
+            "mode": "id",
+            "value": "={{ $json.meetingsDossierId }}"
+          }
+        },
+        "id": "move-rename",
+        "name": "Déplacer et renommer",
+        "type": "n8n-nodes-base.googleDrive",
+        "typeVersion": 3,
+        "position": [
+          2912,
+          368
+        ],
+        "retryOnFail": true,
+        "maxTries": 2,
+        "waitBetweenTries": 1000,
+        "credentials": {
+          "googleDriveOAuth2Api": {
+            "id": "N8N_RESOURCE_ID_18",
+            "name": "Google Drive account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "content": "## TRIGGER\nSurveille le dossier Meet Recordings dans Google Drive.\nDès qu'une nouvelle transcription Gemini apparaît, le workflow se déclenche.\n\n**À configurer :**\n- Dossier Google Drive à surveiller\n- Credentials Google Drive OAuth2"
+        },
+        "id": "note-trigger",
+        "name": "Note - Trigger",
+        "type": "n8n-nodes-base.stickyNote",
+        "typeVersion": 1,
+        "position": [
+          -208,
+          -144
+        ]
+      },
+      {
+        "parameters": {
+          "content": "## ANALYSE IA (Gemini)\n- Reçoit la transcription + liste clients\n- Identifie le client par domaine email\n- Déduit les rôles des participants\n- Extrait : résumé, points clés, actions\n- Output JSON structuré"
+        },
+        "id": "note-ia",
+        "name": "Note - Analyse IA",
+        "type": "n8n-nodes-base.stickyNote",
+        "typeVersion": 1,
+        "position": [
+          1056,
+          -144
+        ]
+      },
+      {
+        "parameters": {
+          "content": "## SORTIES\n1. Email personnalisé par participant (récap + actions)\n2. Email récap complet à contact@example.com\n3. Tâches créées dans Google Tasks\n4. Fichier classé dans /clients/{nom}/meetings/"
+        },
+        "id": "note-sorties",
+        "name": "Note - Sorties",
+        "type": "n8n-nodes-base.stickyNote",
+        "typeVersion": 1,
+        "position": [
+          1456,
+          -400
+        ]
+      },
+      {
+        "parameters": {
+          "content": "## CLASSEMENT DRIVE\n- Identifie le client via Google Sheet\n- Vérifie si /meetings/ existe, le crée sinon\n- Déplace et renomme : JJ-MM-AAAA-nom-client\n- Si client INCONNU : erreur + fichier reste en place"
+        },
+        "id": "note-drive",
+        "name": "Note - Classement Drive",
+        "type": "n8n-nodes-base.stickyNote",
+        "typeVersion": 1,
+        "position": [
+          1456,
+          608
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const item = $input.first();\nconst transcription = item.json.transcription;\nconst clients = item.json.clients;\n\nconst systemPrompt = `Tu es un consultant senior qui redige des comptes rendus de reunion strategiques et actionnables.\nTu ne dois JAMAIS inventer de contenu. Chaque information doit provenir DIRECTEMENT de la transcription.\nTu FILTRES le bruit : small talk, digressions personnelles, discussions informelles ne doivent PAS apparaitre dans les champs destines aux participants.\nTu te concentres sur les decisions strategiques, les engagements pris et les prochaines etapes concretes.\n\nEN PLUS, tu produis une analyse approfondie reservee a Alex (contact@example.com), le consultant qui pilote la relation client. Cette analyse doit :\n- Decoder le sous-texte et l'implicite de la reunion (ce qui n'a pas ete dit mais qui transparait)\n- Identifier les dynamiques interpersonnelles et les rapports de force\n- Detecter les signaux faibles (hesitations, resistances, enthousiasme, non-dits)\n- Classifier le type de reunion et adapter les conseils en consequence\n- Fournir des recommandations strategiques concretes pour la prochaine etape\n\nReponds uniquement avec du JSON brut valide.`;\n\nconst userPrompt = `Analyse UNIQUEMENT la transcription ci-dessous. Ne genere AUCUNE information fictive.\n\nTranscription :\n---\n${transcription}\n---\n\nClients connus :\n${clients}\n\nINSTRUCTIONS :\n1. Identifie les participants (noms avant les ':'). Identifie le client en matchant noms/domaines avec la liste (erreurs de transcription possibles).\n2. FILTRE LE BRUIT pour les champs participants : ignore le small talk. Ne garde que l'essentiel strategique.\n3. Detecte la langue principale de la reunion. Les champs destines aux participants doivent etre dans CETTE langue.\n4. Les champs d'analyse pour Alex (analyse_alex) sont TOUJOURS en francais.\n\nCHAMPS JSON :\n\n--- Champs pour les emails participants (langue de la reunion) ---\n- client : nom EXACT de la liste clients\n- langue : \"fr\" ou \"en\"\n- contexte : une phrase de contexte situant la reunion\n- decisions_cles : array {point: string, detail: string, tbc: boolean}\n- prochaines_etapes : array {responsable: string, action: string, echeance: string|null}\n- participants : array {nom, email (null si inconnu), role_deduit, points_cles (array: contributions strategiques uniquement), actions (array: prochaines etapes concretes)}\n\n--- Champs pour le recap Alex (TOUJOURS en francais) ---\n- resume : synthese executive 2-3 phrases\n- actions_alex : array {titre, details}\n- points_a_creuser : array strings\n- analyse_alex : objet avec les champs suivants :\n  - type_reunion : string (ex: \"commerciale\", \"point hebdomadaire\", \"kick-off\", \"strategique\", \"suivi projet\", \"negociation\", etc.)\n  - sous_texte : array strings - ce qui n'a pas ete dit explicitement mais qui transparait (hesitations, resistances, motivations cachees, enjeux politiques internes)\n  - dynamiques : array strings - observations sur les rapports de force, les alliances, qui influence qui, les tensions eventuelles\n  - signaux_faibles : array strings - indices subtils a surveiller (changement de ton, sujets evites, enthousiasme particulier, formulations evasives)\n  - conseils_strategiques : array strings - recommandations concretes adaptees au TYPE de reunion :\n    * Si commerciale : prochaine etape du cycle de vente, objections a anticiper, levier de closing\n    * Si point hebdo/suivi : priorites suggerees, risques identifies, points de vigilance\n    * Si kick-off : jalons critiques, quick wins, pieces a risque\n    * Si negociation : position de force/faiblesse, concessions possibles, red lines\n    * Si strategique : arbitrages recommandes, timing optimal, allies a mobiliser\n  - temperature_relation : string - evaluation de la sante de la relation client (\"excellente\", \"bonne\", \"a surveiller\", \"tendue\", \"critique\") avec une justification courte`;\n\nconst requestBody = {\n  contents: [{ role: 'user', parts: [{ text: userPrompt }] }],\n  systemInstruction: { parts: [{ text: systemPrompt }] },\n  generationConfig: { temperature: 0.4, responseMimeType: 'application/json' }\n};\n\nreturn [{ json: { requestBody, fichierOriginalId: item.json.fichierOriginalId, fichierOriginalNom: item.json.fichierOriginalNom, clients: item.json.clients } }];"
+        },
+        "id": "build-prompt",
+        "name": "Construire prompt Gemini",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1120,
+          80
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "googlePalmApi",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify($json.requestBody) }}",
+          "options": {
+            "timeout": 120000
+          }
+        },
+        "id": "call-gemini",
+        "name": "Appeler Gemini API",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1344,
+          80
+        ],
+        "retryOnFail": true,
+        "maxTries": 2,
+        "waitBetweenTries": 3000,
+        "credentials": {
+          "googlePalmApi": {
+            "id": "N8N_RESOURCE_ID_06",
+            "name": "Google Gemini(PaLM) Api account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const item = $input.first();\nconst response = item.json;\n\nlet text = '';\nif (response.candidates && response.candidates[0]) {\n  const parts = response.candidates[0].content.parts;\n  text = parts.map(p => p.text).join('');\n}\n\nlet analyse;\nconst cleaned = text.replace(/```json\\n?/g, '').replace(/```/g, '').trim();\ntry {\n  analyse = JSON.parse(cleaned);\n} catch (e) {\n  const fixed = cleaned.replace(/,\\s*}/g, '}').replace(/,\\s*]/g, ']');\n  try {\n    analyse = JSON.parse(fixed);\n  } catch (e2) {\n    throw new Error('JSON invalide de Gemini: ' + cleaned.substring(0, 500));\n  }\n}\n\nreturn [{ json: { text: JSON.stringify(analyse), analyse, clients: $('Construire prompt Gemini').first().json.clients, fichierOriginalId: $('Construire prompt Gemini').first().json.fichierOriginalId } }];"
+        },
+        "id": "parse-gemini",
+        "name": "Parser reponse Gemini",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1568,
+          80
+        ]
+      },
+      {
+        "parameters": {
+          "operation": "update",
+          "fileId": {
+            "mode": "id",
+            "value": "={{ $json.id }}"
+          },
+          "newUpdatedFileName": "={{ $('Fusionner chemin dossier').first().json.nouveauNom }}",
+          "options": {}
+        },
+        "id": "c744960b-48a7-4fca-89dc-c1508c32d492",
+        "name": "Renommer fichier",
+        "type": "n8n-nodes-base.googleDrive",
+        "typeVersion": 3,
+        "position": [
+          3136,
+          368
+        ],
+        "retryOnFail": true,
+        "maxTries": 2,
+        "waitBetweenTries": 1000,
+        "credentials": {
+          "googleDriveOAuth2Api": {
+            "id": "N8N_RESOURCE_ID_18",
+            "name": "Google Drive account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "amount": 3,
+          "unit": "minutes"
+        },
+        "id": "wait-transcription",
+        "name": "Attendre transcription",
+        "type": "n8n-nodes-base.wait",
+        "typeVersion": 1.1,
+        "position": [
+          16,
+          80
+        ],
+        "webhookId": "18b7d4f5-4116-4799-9886-58de9ea8696e"
+      }
+    ],
+    "connections": {
+      "Télécharger transcription": {
+        "main": [
+          [
+            {
+              "node": "Extraire texte",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Extraire texte": {
+        "main": [
+          [
+            {
+              "node": "Récupérer liste clients",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Récupérer liste clients": {
+        "main": [
+          [
+            {
+              "node": "Combiner données",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Combiner données": {
+        "main": [
+          [
+            {
+              "node": "Construire prompt Gemini",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Construire prompt Gemini": {
+        "main": [
+          [
+            {
+              "node": "Appeler Gemini API",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Appeler Gemini API": {
+        "main": [
+          [
+            {
+              "node": "Parser reponse Gemini",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Parser reponse Gemini": {
+        "main": [
+          [
+            {
+              "node": "Préparer emails participants",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Préparer email récap",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Préparer tâches",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Identifier dossier client",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Préparer emails participants": {
+        "main": [
+          [
+            {
+              "node": "Créer brouillon participant",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Préparer email récap": {
+        "main": [
+          [
+            {
+              "node": "Envoyer récap Alex",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Préparer tâches": {
+        "main": [
+          [
+            {
+              "node": "Créer tâche Google",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Identifier dossier client": {
+        "main": [
+          [
+            {
+              "node": "Chercher dossier meetings",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Chercher dossier meetings": {
+        "main": [
+          [
+            {
+              "node": "Dossier meetings existe ?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Dossier meetings existe ?": {
+        "main": [
+          [
+            {
+              "node": "Fusionner chemin dossier",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Créer dossier meetings",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Créer dossier meetings": {
+        "main": [
+          [
+            {
+              "node": "Fusionner chemin dossier",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Fusionner chemin dossier": {
+        "main": [
+          [
+            {
+              "node": "Déplacer et renommer",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Déplacer et renommer": {
+        "main": [
+          [
+            {
+              "node": "Renommer fichier",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Détecter nouvelle transcription": {
+        "main": [
+          [
+            {
+              "node": "Attendre transcription",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Attendre transcription": {
+        "main": [
+          [
+            {
+              "node": "Télécharger transcription",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Alex Martin",
+    "name": "Version 4c06efba",
+    "description": "",
+    "autosaved": true,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-02-25T17:17:17.716Z",
+        "id": 73,
+        "workflowId": "tVCoRFth09sKXyE8",
+        "versionId": "4c06efba-2dbf-42ee-aeb5-72e5fadec806",
+        "event": "activated",
+        "userId": "f0076426-ba7b-4097-be5a-9830aa9c1ec6"
+      }
+    ]
+  }
+}

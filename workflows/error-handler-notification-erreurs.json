@@ -1,0 +1,65 @@
+{
+  "name": "Error Handler - Notification erreurs workflows",
+  "nodes": [
+    {
+      "id": "error-trigger",
+      "name": "Erreur détectée",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [0, 80],
+      "parameters": {}
+    },
+    {
+      "id": "format-email",
+      "name": "Formater notification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [224, 80],
+      "parameters": {
+        "jsCode": "const item = $input.first();\nconst execution = item.json.execution || {};\nconst workflow = item.json.workflow || {};\n\nconst workflowName = workflow.name || 'Inconnu';\nconst workflowId = workflow.id || '';\nconst errorMessage = execution.error?.message || 'Erreur inconnue';\nconst errorNode = execution.lastNodeExecuted || 'N/A';\nconst executionId = execution.id || '';\nconst startedAt = execution.startedAt ? new Date(execution.startedAt).toLocaleString('fr-FR', { timeZone: 'Europe/Paris' }) : 'N/A';\nconst mode = execution.mode || 'N/A';\nconst retryUrl = execution.url || '';\n\nconst html = `<div style=\"font-family: Helvetica, Arial, sans-serif; font-size: 12pt; color: #333; line-height: 1.6; max-width: 600px;\">\n  <p style=\"font-size: 14pt; font-weight: bold; color: #e74c3c;\">Erreur workflow</p>\n\n  <table style=\"border-collapse: collapse; width: 100%; margin: 16px 0;\">\n    <tr><td style=\"padding: 8px; font-weight: bold; border-bottom: 1px solid #eee; width: 140px;\">Workflow</td><td style=\"padding: 8px; border-bottom: 1px solid #eee;\">${workflowName}</td></tr>\n    <tr><td style=\"padding: 8px; font-weight: bold; border-bottom: 1px solid #eee;\">Node en erreur</td><td style=\"padding: 8px; border-bottom: 1px solid #eee; color: #e74c3c; font-weight: bold;\">${errorNode}</td></tr>\n    <tr><td style=\"padding: 8px; font-weight: bold; border-bottom: 1px solid #eee;\">Message</td><td style=\"padding: 8px; border-bottom: 1px solid #eee;\">${errorMessage}</td></tr>\n    <tr><td style=\"padding: 8px; font-weight: bold; border-bottom: 1px solid #eee;\">Date</td><td style=\"padding: 8px; border-bottom: 1px solid #eee;\">${startedAt}</td></tr>\n    <tr><td style=\"padding: 8px; font-weight: bold; border-bottom: 1px solid #eee;\">Mode</td><td style=\"padding: 8px; border-bottom: 1px solid #eee;\">${mode}</td></tr>\n    <tr><td style=\"padding: 8px; font-weight: bold;\">Execution ID</td><td style=\"padding: 8px;\">${executionId}</td></tr>\n  </table>\n\n  ${retryUrl ? '<p><a href=\"' + retryUrl + '\" style=\"color: #3498db;\">Voir l\\'execution dans n8n</a></p>' : ''}\n</div>`;\n\nreturn [{\n  json: {\n    sujet: '[ERREUR] ' + workflowName + ' — ' + errorNode,\n    corps: html\n  }\n}];"
+      }
+    },
+    {
+      "id": "send-error-email",
+      "name": "Envoyer alerte email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [448, 80],
+      "parameters": {
+        "sendTo": "contact@example.com",
+        "subject": "={{ $json.sujet }}",
+        "emailType": "html",
+        "message": "={{ $json.corps }}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Erreur détectée": {
+      "main": [
+        [
+          {
+            "node": "Formater notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formater notification": {
+      "main": [
+        [
+          {
+            "node": "Envoyer alerte email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner"
+  }
+}

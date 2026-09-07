@@ -1,0 +1,335 @@
+{
+  "id": "N8N_RESOURCE_ID_08",
+  "name": "Gmail - FAQ Builder",
+  "active": false,
+  "nodes": [
+    {
+      "id": "schedule-trigger",
+      "name": "Declencheur quotidien",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [250, 400],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "triggerAtHour": 10
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "gmail-search",
+      "name": "Rechercher threads avec reponse",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [474, 400],
+      "parameters": {
+        "resource": "message",
+        "operation": "getAll",
+        "returnAll": false,
+        "limit": 50,
+        "simple": false,
+        "filters": {
+          "q": "(label:Client OR label:Prospect) -label:FAQ",
+          "readStatus": "all"
+        }
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "N8N_RESOURCE_ID_10",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "id": "dedup-threads",
+      "name": "Dedupliquer par thread",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [586, 400],
+      "parameters": {
+        "jsCode": "// Deduplique les messages par threadId\n// (Gmail retourne des messages individuels, plusieurs peuvent appartenir au meme thread)\nconst items = $input.all();\nconst seen = new Set();\nconst unique = [];\nfor (const item of items) {\n  const threadId = item.json.threadId;\n  if (!seen.has(threadId)) {\n    seen.add(threadId);\n    unique.push(item);\n  }\n}\nreturn unique;"
+      }
+    },
+    {
+      "id": "drive-search",
+      "name": "Chercher profil business",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [698, 400],
+      "parameters": {
+        "resource": "fileFolder",
+        "limit": 1,
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "GOOGLE_DOC_ID_13",
+            "mode": "id"
+          }
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_18",
+          "name": "Google Drive account"
+        }
+      },
+      "executeOnce": false,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "drive-download",
+      "name": "Telecharger profil business",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [922, 400],
+      "parameters": {
+        "operation": "download",
+        "fileId": "={{ $json.id }}",
+        "options": {
+          "googleFileConversion": {
+            "conversion": {
+              "docsToFormat": "text/plain"
+            }
+          }
+        }
+      },
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_18",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "id": "extract-text",
+      "name": "Extraire texte profil",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [1146, 400],
+      "parameters": {
+        "operation": "text",
+        "destinationKey": "profilBusiness"
+      }
+    },
+    {
+      "id": "gmail-get-thread",
+      "name": "Recuperer thread complet",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1370, 400],
+      "parameters": {
+        "resource": "thread",
+        "operation": "get",
+        "threadId": "={{ $('Rechercher threads avec reponse').item.json.threadId }}"
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "N8N_RESOURCE_ID_10",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "id": "extract-qa",
+      "name": "Extraire question et reponse",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1594, 400],
+      "parameters": {
+        "jsCode": "const thread = $json;\nconst messages = thread.messages || [];\nconst profilBusiness = $('Extraire texte profil').first().json.profilBusiness;\nconst emailSource = $('Rechercher threads avec reponse').item.json;\n\nconst myEmail = 'contact@example.com';\n\nlet question = null;\nlet answer = null;\nlet categorie = 'Autre';\n\nfor (const msg of messages) {\n  const fromField = msg.From || msg.from || '';\n  const fromAddress = typeof fromField === 'object'\n    ? (fromField.value?.[0]?.address || fromField.text || '')\n    : fromField;\n  \n  const isFromMe = fromAddress.toLowerCase().includes(myEmail);\n\n  if (!isFromMe && !question) {\n    const msgLabels = msg.labels || [];\n    for (const label of msgLabels) {\n      if (label.name === 'Client' || label.name === 'Prospect') {\n        categorie = label.name;\n        break;\n      }\n    }\n    \n    question = {\n      from: fromAddress,\n      subject: msg.Subject || msg.subject || emailSource.subject || '',\n      body: emailSource.text || emailSource.textAsHtml || msg.snippet || msg.text || ''\n    };\n  }\n\n  if (isFromMe && !answer) {\n    answer = {\n      body: msg.snippet || msg.text || ''\n    };\n  }\n}\n\nif (!question || !answer) {\n  return [];\n}\n\nconst cleanHtml = (text) => text\n  .replace(/&#39;/g, \"'\")\n  .replace(/&amp;/g, '&')\n  .replace(/&lt;/g, '<')\n  .replace(/&gt;/g, '>')\n  .replace(/&quot;/g, '\"');\n\nconst fromText = typeof emailSource.from === 'object'\n  ? (emailSource.from?.text || emailSource.from?.value?.[0]?.address || '')\n  : (emailSource.from || '');\nconst subjectText = typeof emailSource.subject === 'string' ? emailSource.subject : '';\n\nreturn [{\n  json: {\n    threadId: emailSource.threadId || emailSource.id,\n    categorie,\n    questionFrom: question.from,\n    questionSubject: question.subject,\n    questionBody: cleanHtml(question.body),\n    answerBody: cleanHtml(answer.body),\n    originalFrom: fromText,\n    originalSubject: subjectText,\n    profilBusiness\n  }\n}];"
+      }
+    },
+    {
+      "id": "build-faq-prompt",
+      "name": "Construire prompt FAQ",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1818, 400],
+      "parameters": {
+        "jsCode": "const data = $json;\n\nconst systemPrompt = `Tu es un assistant qui transforme des echanges emails en entrees FAQ professionnelles.\n\nVoici le profil business du proprietaire :\n${data.profilBusiness}\n\n# Regles\n- Reformule la question pour qu'elle soit generique (supprime les noms de personnes, entreprises specifiques)\n- Reformule la reponse de maniere concise et professionnelle\n- Conserve les informations factuelles (prix, delais, conditions, process)\n- Le ton doit etre coherent avec le profil business\n- Si la question ou la reponse n'est pas pertinente pour une FAQ (ex: simple coordination logistique), retourne {\"question\": \"\", \"answer\": \"\"} pour signaler qu'il faut skip\n\n# Output\nRetourne un JSON : { \"question\": \"...\", \"answer\": \"...\" }`;\n\nconst userPrompt = `Email recu :\nSujet : ${data.originalSubject}\nQuestion du client :\n${data.questionBody}\n\nReponse envoyee :\n${data.answerBody}`;\n\nconst requestBody = {\n  contents: [{ role: 'user', parts: [{ text: userPrompt }] }],\n  systemInstruction: { parts: [{ text: systemPrompt }] },\n  generationConfig: {\n    temperature: 0.3,\n    responseMimeType: 'application/json'\n  }\n};\n\nreturn [{ json: { ...data, requestBody } }];"
+      }
+    },
+    {
+      "id": "gemini-faq",
+      "name": "Generer FAQ via Gemini",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2042, 400],
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.requestBody) }}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "credentials": {
+        "googlePalmApi": {
+          "id": "N8N_RESOURCE_ID_06",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000
+    },
+    {
+      "id": "parser-faq",
+      "name": "Parser FAQ",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2266, 400],
+      "parameters": {
+        "jsCode": "const response = $json.candidates[0].content.parts[0].text;\nconst faq = JSON.parse(response);\nconst data = $('Construire prompt FAQ').item.json;\n\nif (!faq.question || !faq.answer) {\n  return [];\n}\n\nreturn [{\n  json: {\n    date: new Date().toISOString().slice(0, 16).replace('T', ' '),\n    categorie: data.categorie || 'Autre',\n    question: faq.question,\n    answer: faq.answer,\n    originalFrom: data.originalFrom,\n    originalSubject: data.originalSubject,\n    threadId: data.threadId,\n    faqLabelId: 'Label_5451177273715628836'\n  }\n}];"
+      }
+    },
+    {
+      "id": "sheets-append",
+      "name": "Sauvegarder dans FAQ Base",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [2490, 300],
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "GOOGLE_DOC_ID_10"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "FAQ"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{ $json.date }}",
+            "Categorie": "={{ $json.categorie }}",
+            "Question": "={{ $json.question }}",
+            "Reponse": "={{ $json.answer }}",
+            "Email original (De)": "={{ $json.originalFrom }}",
+            "Sujet original": "={{ $json.originalSubject }}"
+          }
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_03",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "id": "gmail-add-label",
+      "name": "Marquer thread FAQ",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [2490, 500],
+      "parameters": {
+        "resource": "message",
+        "operation": "addLabels",
+        "messageId": "={{ $json.threadId }}",
+        "labelIds": "={{ [$json.faqLabelId] }}"
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "N8N_RESOURCE_ID_10",
+          "name": "Gmail account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "id": "sticky-1",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [220, 120],
+      "parameters": {
+        "content": "## 1. Recherche emails\nSchedule Trigger 10h + Gmail getAll\nThreads Client/Prospect avec reponse (from:me)\nSans label FAQ (deja traites)\n\nBranche parallele : lookup ID label FAQ",
+        "color": 2,
+        "width": 700,
+        "height": 200
+      }
+    },
+    {
+      "id": "sticky-2",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1340, 120],
+      "parameters": {
+        "content": "## 2. Extraction + IA\nGet thread complet Gmail\nExtraire question client + reponse Alex\nGemini reformule en FAQ (JSON)\ntemperature 0.3, responseMimeType application/json",
+        "color": 5,
+        "width": 700,
+        "height": 200
+      }
+    },
+    {
+      "id": "sticky-3",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [2230, 120],
+      "parameters": {
+        "content": "## 3. Sauvegarde\nParser reponse Gemini\nGoogle Sheets FAQ Base (append)\nLabel Gmail FAQ (marqueur retraitement)\n\nLes 2 en parallele depuis Parser FAQ",
+        "color": 7,
+        "width": 500,
+        "height": 200
+      }
+    }
+  ],
+  "connections": {
+    "Declencheur quotidien": {
+      "main": [[{"node": "Rechercher threads avec reponse", "type": "main", "index": 0}]]
+    },
+    "Rechercher threads avec reponse": {
+      "main": [[{"node": "Dedupliquer par thread", "type": "main", "index": 0}]]
+    },
+    "Dedupliquer par thread": {
+      "main": [[{"node": "Chercher profil business", "type": "main", "index": 0}]]
+    },
+    "Chercher profil business": {
+      "main": [[{"node": "Telecharger profil business", "type": "main", "index": 0}]]
+    },
+    "Telecharger profil business": {
+      "main": [[{"node": "Extraire texte profil", "type": "main", "index": 0}]]
+    },
+    "Extraire texte profil": {
+      "main": [[{"node": "Recuperer thread complet", "type": "main", "index": 0}]]
+    },
+    "Recuperer thread complet": {
+      "main": [[{"node": "Extraire question et reponse", "type": "main", "index": 0}]]
+    },
+    "Extraire question et reponse": {
+      "main": [[{"node": "Construire prompt FAQ", "type": "main", "index": 0}]]
+    },
+    "Construire prompt FAQ": {
+      "main": [[{"node": "Generer FAQ via Gemini", "type": "main", "index": 0}]]
+    },
+    "Generer FAQ via Gemini": {
+      "main": [[{"node": "Parser FAQ", "type": "main", "index": 0}]]
+    },
+    "Parser FAQ": {
+      "main": [[
+        {"node": "Sauvegarder dans FAQ Base", "type": "main", "index": 0},
+        {"node": "Marquer thread FAQ", "type": "main", "index": 0}
+      ]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "bAurtiK8UqF7Mlw6"
+  }
+}

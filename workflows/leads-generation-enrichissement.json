@@ -1,0 +1,3376 @@
+{
+  "updatedAt": "2026-02-18T07:20:20.000Z",
+  "createdAt": "2026-02-17T19:55:57.346Z",
+  "id": "N8N_RESOURCE_ID_09",
+  "name": "Leads - Generation et Enrichissement",
+  "description": null,
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "trigger-placeholder",
+      "name": "Planifier Analyse Entreprise",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        592,
+        -352
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Branche A — Analyse entreprise\nTrigger: Entreprises.statut = \"analyser\"\n\n1. Schedule Trigger (1 min)\n2. Lire entreprises a analyser\n3. Jina AI scrape site web\n4. Gemini analyse (fiche + offres)\n5. Update fiche entreprise\n6. Insert offres detectees\n\n**Statut:** analyser → analyse",
+        "height": 452,
+        "width": 2736,
+        "color": 4
+      },
+      "id": "sticky-branche-a",
+      "name": "Note Branche A",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        128,
+        -512
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Branche B — Generation personas\nTrigger: Entreprises.statut = \"generer_personas\"\n\n1. Schedule Trigger (1 min)\n2. Lire entreprises a generer\n3. Lire offres liees\n4. Gemini genere personas + intents Apollo\n5. Insert personas (nb_leads = 20 par defaut)\n6. Update statut entreprise\n\n**Statut:** generer_personas → personas_generes",
+        "height": 340,
+        "width": 2504,
+        "color": 4
+      },
+      "id": "sticky-branche-b",
+      "name": "Note Branche B",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        128,
+        -32
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Branche C — Recherche Apollo\nTrigger: Personas.statut = \"valide\"\n\n1. Schedule Trigger (1 min)\n2. Lire personas valides\n3. Apollo mixed_people/search\n4. Split resultats\n5. Nettoyer donnees\n6. Insert leads\n7. Update statut persona\n\n**Statut persona:** valide → traite",
+        "height": 340,
+        "width": 2072
+      },
+      "id": "sticky-branche-c",
+      "name": "Note Branche C",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        128,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Branche D — Extract LinkedIn Username\nTrigger: Leads (extract_username_status = pending)\n\n1. Schedule Trigger (1 min)\n2. Lire leads pending\n3. Code: extraire username depuis URL\n4. Update lead\n\n**Statut:** pending → finished",
+        "height": 280,
+        "width": 1376,
+        "color": 3
+      },
+      "id": "sticky-branche-d",
+      "name": "Note Branche D",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        128,
+        736
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Branche E — Email + Validation mails.so\nTrigger: Leads (contacts_scrape_status = pending)\n\n1. Schedule Trigger (1 min)\n2. Lire leads pending\n3. Apollo people/match (get email)\n4. Extraire emails en array\n5. mails.so batch validation\n6. Wait 60s\n7. Get validation results\n8. Mapper apollo_id + statut\n9. Update lead\n\n**Statut:** pending → finished / invalid_email",
+        "height": 412,
+        "width": 2568,
+        "color": 5
+      },
+      "id": "sticky-branche-e",
+      "name": "Note Branche E",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        128,
+        1056
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Branche F — Scraping LinkedIn + Resume IA + Scoring\nTrigger: Leads (profile_summary_scrape = pending)\n\n1. Schedule Trigger (1 min)\n2. Lire leads pending + Lire offres pour scoring\n3. Apify: scraper posts LinkedIn\n4. Apify: scraper profil LinkedIn\n5. Merge + Clean + Stringify\n6. Gemini resume posts + profil\n7. Code node scoring (mots-cles vs offres)\n8. Update lead avec resume + scores\n\n**Statut:** pending → finished / failed",
+        "height": 680,
+        "width": 2568,
+        "color": 6
+      },
+      "id": "sticky-branche-f",
+      "name": "Note Branche F",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        144,
+        1520
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Branches Maintenance\n3 Schedule Triggers (toutes les 4 semaines, mardi 8h)\n\n- Reset invalid_email → pending\n- Reset failed profile_summary → pending\n- Reset failed posts_scrape → unscraped",
+        "height": 792,
+        "width": 1128,
+        "color": 5
+      },
+      "id": "sticky-maintenance",
+      "name": "Note Maintenance",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        3120,
+        -512
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "GOOGLE_DOC_ID_01",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Entreprises",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "statut",
+              "lookupValue": "analyser"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5dd66d7d-e31d-43a7-bca9-5bb6e7fadcd2",
+      "name": "Lire Entreprises a analyser",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        816,
+        -352
+      ],
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_03",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://r.jina.ai/{{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-with-links",
+              "value": "true"
+            },
+            {
+              "name": "Accept",
+              "value": "text/plain"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "64e15c08-70d0-41ec-9ce6-8549173c4bcc",
+      "name": "Scraper site web (Jina)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1040,
+        -352
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [{\"parts\": [{\"text\": {{ JSON.stringify(\"Tu es un expert en strategie commerciale B2B et en veille concurrentielle. Analyse en profondeur le contenu de ce site web pour produire une fiche entreprise ultra-detaillee, exploitable pour du ciblage commercial.\\n\\nContenu du site :\\n\" + $json.data + \"\\n\\nINSTRUCTIONS D ANALYSE :\\n\\n1. ENTREPRISE : Va au-dela de la description marketing. Identifie :\\n   - Les technologies et outils concrets mentionnes (noms de produits, frameworks, plateformes)\\n   - Les specialisations reelles (pas juste le secteur generique, mais les domaines d expertise precis)\\n   - Le profil type de leurs clients (taille, secteur, maturite digitale)\\n   - L ecosysteme : partenaires, certifications, communautes, labels\\n   - Les signaux de positionnement : pricing visible, nombre de clients, anciennete, equipe\\n\\n2. OFFRES : Pour chaque offre identifiee, sois tres precis :\\n   - Extrais les noms exacts des produits/formations/services (pas de reformulation)\\n   - Identifie les technologies specifiques utilisees dans chaque offre\\n   - Precise le format de livrable (formation presentielle, e-learning, audit, accompagnement long, projet cle en main, SaaS, etc.)\\n   - Pour la cible ideale, donne un profil LinkedIn credible (titre exact, seniority, departement)\\n   - Pour les mots-cles, inclus des termes techniques specifiques qu un prospect taperait sur LinkedIn ou Google\\n\\nRetourne UNIQUEMENT un JSON valide avec cette structure :\\n{\\n  \\\"entreprise\\\": {\\n    \\\"nom\\\": \\\"Nom exact de l entreprise\\\",\\n    \\\"description\\\": \\\"Description de l activite en 3-5 phrases, factuelle et precise\\\",\\n    \\\"proposition_valeur\\\": \\\"Ce qui les differencie concretement de la concurrence\\\",\\n    \\\"secteur\\\": \\\"Secteur d activite principal\\\",\\n    \\\"taille_estimee\\\": \\\"startup / PME / ETI / grand_groupe\\\",\\n    \\\"technologies\\\": \\\"Liste des technologies, outils et plateformes mentionnes sur le site, separes par des virgules\\\",\\n    \\\"specialisations\\\": \\\"Domaines d expertise precis, separes par des virgules (ex: Formation IA generative, Automatisation de processus, Agents IA securises)\\\",\\n    \\\"types_clients\\\": \\\"Profil type des clients : taille, secteur, maturite, separes par des virgules\\\",\\n    \\\"ecosysteme\\\": \\\"Partenaires, certifications, labels, communautes mentionnes\\\"\\n  },\\n  \\\"offres\\\": [\\n    {\\n      \\\"nom_offre\\\": \\\"Nom exact du produit, service ou formation (tel que sur le site)\\\",\\n      \\\"description\\\": \\\"Description factuelle en 2-3 phrases\\\",\\n      \\\"cible_ideale\\\": \\\"Titre LinkedIn exact du prospect ideal (ex: Directeur des Operations, VP Engineering)\\\",\\n      \\\"mots_cles\\\": \\\"8 a 12 mots-cles techniques et business, separes par des virgules\\\",\\n      \\\"problemes_resolus\\\": \\\"Problemes concrets que cette offre adresse, en une phrase\\\",\\n      \\\"technologies_utilisees\\\": \\\"Technologies specifiques a cette offre, separees par des virgules\\\",\\n      \\\"format_livrable\\\": \\\"formation presentielle / e-learning / audit / accompagnement / projet cle en main / SaaS / conseil\\\"\\n    }\\n  ]\\n}\\n\\nIdentifie entre 1 et 8 offres distinctes. Sois exhaustif sur les offres visibles. Pour les mots-cles, privilegia les termes qu un decision-maker rechercherait activement.\") }}  }]}],\n  \"generationConfig\": {\"responseMimeType\": \"application/json\", \"temperature\": 0.3}\n}",
+        "options": {}
+      },
+      "id": "cabee5cf-49c2-4c7b-8ec1-824fdabc20a6",
+      "name": "Analyser entreprise (Gemini)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1920,
+        -352
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "N8N_RESOURCE_ID_06",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const geminiResponse = $json.candidates[0].content.parts[0].text;\nconst parsed = JSON.parse(geminiResponse);\nconst sourceRow = $('Lire Entreprises a analyser').first().json;\n\nreturn {\n  json: {\n    ...parsed,\n    source_url: sourceRow.url,\n    source_row_number: sourceRow.row_number\n  }\n};"
+      },
+      "id": "912f0dba-d80e-4ba3-95a8-1a51abd87b12",
+      "name": "Parser reponse Gemini",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2144,
+        -352
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "GOOGLE_DOC_ID_01",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Entreprises",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "url": "={{ $json.source_url }}",
+            "nom": "={{ $json.entreprise.nom }}",
+            "description": "={{ $json.entreprise.description }}",
+            "proposition_valeur": "={{ $json.entreprise.proposition_valeur }}",
+            "secteur": "={{ $json.entreprise.secteur }}",
+            "taille_estimee": "={{ $json.entreprise.taille_estimee }}",
+            "technologies": "={{ $json.entreprise.technologies }}",
+            "specialisations": "={{ $json.entreprise.specialisations }}",
+            "types_clients": "={{ $json.entreprise.types_clients }}",
+            "ecosysteme": "={{ $json.entreprise.ecosysteme }}",
+            "statut": "analyse",
+            "date_analyse": "={{ $now.format('yyyy-MM-dd') }}"
+          },
+          "matchingColumns": [
+            "url"
+          ],
+          "schema": [
+            {
+              "id": "url",
+              "displayName": "url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "statut",
+              "displayName": "statut",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "nom",
+              "displayName": "nom",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "description",
+              "displayName": "description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "proposition_valeur",
+              "displayName": "proposition_valeur",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "secteur",
+              "displayName": "secteur",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "taille_estimee",
+              "displayName": "taille_estimee",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "technologies",
+              "displayName": "technologies",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "specialisations",
+              "displayName": "specialisations",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "types_clients",
+              "displayName": "types_clients",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ecosysteme",
+              "displayName": "ecosysteme",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "date_analyse",
+              "displayName": "date_analyse",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "98db4555-b5e5-45f8-8ebf-996111d88e85",
+      "name": "Mettre a jour fiche entreprise",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2368,
+        -448
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_03",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "offres",
+        "options": {}
+      },
+      "id": "e996bf38-bcec-4e33-8dc9-dccfe11fbe2b",
+      "name": "Extraire offres",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        2368,
+        -256
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "GOOGLE_DOC_ID_01",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Offres",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "entreprise_id": "={{ $('Parser reponse Gemini').item.json.entreprise.nom }}",
+            "nom_offre": "={{ $json.nom_offre }}",
+            "description": "={{ $json.description }}",
+            "cible_ideale": "={{ $json.cible_ideale }}",
+            "mots_cles": "={{ $json.mots_cles }}",
+            "problemes_resolus": "={{ $json.problemes_resolus }}",
+            "technologies_utilisees": "={{ $json.technologies_utilisees }}",
+            "format_livrable": "={{ $json.format_livrable }}"
+          },
+          "schema": [
+            {
+              "id": "entreprise_id",
+              "displayName": "entreprise_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "nom_offre",
+              "displayName": "nom_offre",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "description",
+              "displayName": "description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cible_ideale",
+              "displayName": "cible_ideale",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "mots_cles",
+              "displayName": "mots_cles",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "problemes_resolus",
+              "displayName": "problemes_resolus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "technologies_utilisees",
+              "displayName": "technologies_utilisees",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "format_livrable",
+              "displayName": "format_livrable",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {
+          "useAppend": true
+        }
+      },
+      "id": "393c29c5-a427-4aa7-bd90-97a683620a0e",
+      "name": "Inserer offres",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2592,
+        -256
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_03",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "3a595438-ce62-4df3-8e6a-8cc43196f852",
+      "name": "Planifier Generation Personas",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        592,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "GOOGLE_DOC_ID_01",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Entreprises",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "statut",
+              "lookupValue": "generer_personas"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "197b2185-17c1-4c9a-8040-9f6dbe954f20",
+      "name": "Lire Entreprises a generer",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        816,
+        64
+      ],
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_03",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "GOOGLE_DOC_ID_01",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Offres",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "entreprise_id",
+              "lookupValue": "={{ $json.nom }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7159d2bd-8b98-4d37-8892-a1d9a09e797d",
+      "name": "Lire offres entreprise",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1040,
+        64
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_03",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const entreprise = $('Lire Entreprises a generer').first().json;\nconst offres = $('Lire offres entreprise').all().map(i => i.json);\n\nconst offresText = offres.map((o, i) =>\n  `Offre ${i+1}: ${o.nom_offre}\\n  Description: ${o.description}\\n  Cible ideale: ${o.cible_ideale}\\n  Mots-cles: ${o.mots_cles}\\n  Problemes resolus: ${o.problemes_resolus}`\n).join('\\n\\n');\n\nreturn [{\n  json: {\n    entreprise_nom: entreprise.nom,\n    entreprise_description: entreprise.description,\n    entreprise_proposition_valeur: entreprise.proposition_valeur,\n    entreprise_secteur: entreprise.secteur,\n    offresText\n  }\n}];"
+      },
+      "id": "f64c4d89-85a2-4dd9-8c00-423007576bbb",
+      "name": "Preparer contexte personas",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1264,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [{\"parts\": [{\"text\": {{ JSON.stringify(\"Tu es un expert en strategie commerciale B2B et en prospection via Apollo.io.\\n\\nEntreprise : \" + $json.entreprise_nom + \"\\nDescription : \" + $json.entreprise_description + \"\\nProposition de valeur : \" + $json.entreprise_proposition_valeur + \"\\nSecteur : \" + $json.entreprise_secteur + \"\\n\\nOffres :\\n\" + $json.offresText + \"\\n\\nGenere entre 3 et 7 personas de prospects ideaux pour cette entreprise. Chaque persona doit correspondre aux filtres de recherche de l'API Apollo.io.\\n\\nRetourne UNIQUEMENT un JSON valide :\\n{\\n  \\\"personas\\\": [\\n    {\\n      \\\"titre_poste\\\": \\\"Titre exact (ex: VP of Marketing, CTO, Head of Sales)\\\",\\n      \\\"seniority\\\": \\\"Un parmi: owner, founder, c_suite, partner, vp, head, director, manager, senior, entry\\\",\\n      \\\"departement\\\": \\\"Un parmi: engineering, marketing, sales, operations, finance, hr, it, legal, product, design\\\",\\n      \\\"localisations\\\": \\\"France, United States\\\",\\n      \\\"intents_suggeres\\\": \\\"2-4 intent topics Apollo pertinents (ex: AI, Marketing Automation, CRM, Data Analytics)\\\",\\n      \\\"taille_entreprise\\\": \\\"Ranges Apollo separees par point-virgule (ex: 1,10; 11,20; 21,50; 51,100; 101,200; 201,500; 501,1000; 1001,2000; 2001,5000; 5001,10000; 10001+). Choisis 1 a 3 ranges pertinentes.\\\",\\n      \\\"secteur_entreprise\\\": \\\"Mots-cles secteur/industrie des entreprises cibles du persona (ex: SaaS, Marketing Agency, E-commerce). 1 a 3 mots-cles separes par virgule.\\\",\\n      \\\"nb_leads\\\": 20\\n    }\\n  ]\\n}\\n\\nRegles :\\n- Les titres doivent etre en anglais (standard Apollo)\\n- Les seniority doivent correspondre exactement aux valeurs Apollo listees ci-dessus\\n- Les localisations doivent etre au format Apollo (pays ou region, virgule separee)\\n- Les intents doivent etre des topics de recherche realistes\\n- taille_entreprise : utilise UNIQUEMENT les ranges Apollo listees ci-dessus, separees par point-virgule\\n- secteur_entreprise : mots-cles en anglais pour filtrer les entreprises des prospects\\n- Diversifie les profils : decision makers + influenceurs + utilisateurs finaux\\n- nb_leads par defaut = 20, peut aller de 10 a 100 selon la pertinence du persona\") }}  }]}],\n  \"generationConfig\": {\"responseMimeType\": \"application/json\", \"temperature\": 0.4}\n}",
+        "options": {}
+      },
+      "id": "5185a597-8862-42b6-a7b5-b9b7f80eb3dd",
+      "name": "Generer personas (Gemini)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1488,
+        64
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "N8N_RESOURCE_ID_06",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const geminiResponse = $json.candidates[0].content.parts[0].text;\nconst parsed = JSON.parse(geminiResponse);\nconst entrepriseNom = $('Preparer contexte personas').first().json.entreprise_nom;\n\nreturn {\n  json: {\n    entreprise_id: entrepriseNom,\n    personas: parsed.personas\n  }\n};"
+      },
+      "id": "372221ca-8b91-498a-82d9-a25edba79695",
+      "name": "Parser personas Gemini",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1712,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "personas",
+        "options": {}
+      },
+      "id": "8685e024-67f7-4b23-97e9-385de79c29ff",
+      "name": "Extraire personas",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1936,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "GOOGLE_DOC_ID_01",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Personas",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "entreprise_id": "={{ $('Parser personas Gemini').item.json.entreprise_id }}",
+            "titre_poste": "={{ $json.titre_poste }}",
+            "seniority": "={{ $json.seniority }}",
+            "departement": "={{ $json.departement }}",
+            "localisations": "={{ $json.localisations }}",
+            "intents_suggeres": "={{ $json.intents_suggeres }}",
+            "taille_entreprise": "={{ $json.taille_entreprise }}",
+            "secteur_entreprise": "={{ $json.secteur_entreprise }}",
+            "statut": "a_valider",
+            "nb_leads": "={{ $json.nb_leads }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "entreprise_id",
+              "displayName": "entreprise_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "titre_poste",
+              "displayName": "titre_poste",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "seniority",
+              "displayName": "seniority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "departement",
+              "displayName": "departement",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "localisations",
+              "displayName": "localisations",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "intents_suggeres",
+              "displayName": "intents_suggeres",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "taille_entreprise",
+              "displayName": "taille_entreprise",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "secteur_entreprise",
+              "displayName": "secteur_entreprise",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "statut",
+              "displayName": "statut",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "nb_leads",
+              "displayName": "nb_leads",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {
+          "useAppend": true
+        }
+      },
+      "id": "2b58e139-f373-4a8c-9a52-aa5dbf43bece",
+      "name": "Inserer personas",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2160,
+        64
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_03",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "GOOGLE_DOC_ID_01",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Entreprises",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "nom": "={{ $('Lire Entreprises a generer').first().json.nom }}",
+            "statut": "personas_generes"
+          },
+          "matchingColumns": [
+            "nom"
+          ],
+          "schema": [
+            {
+              "id": "nom",
+              "displayName": "nom",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "statut",
+              "displayName": "statut",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e1e37596-8d89-45b1-836f-f823c329dacf",
+      "name": "Statut personas generes",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2384,
+        64
+      ],
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_03",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "trigger-branche-c",
+      "name": "Planifier Recherche Apollo",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        592,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "GOOGLE_DOC_ID_01"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Personas"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "statut",
+              "lookupValue": "valide"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "read-personas-valides",
+      "name": "Lire Personas valides",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        816,
+        464
+      ],
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_03",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apollo.io/api/v1/mixed_people/api_search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Cache-Control",
+              "value": "no-cache"
+            },
+            {
+              "name": "accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"person_titles\": [\"{{ $json.titre_poste }}\"],\n  \"person_seniorities\": [\"{{ $json.seniority }}\"],\n  \"person_locations\": {{ $json.localisations.split(',').map(l => '\"' + l.trim() + '\"').join(',').replace(/^/, '[').replace(/$/, ']') }},\n  \"organization_num_employees_ranges\": {{ $json.taille_entreprise ? $json.taille_entreprise.split(';').map(r => '\"' + r.trim() + '\"').join(',').replace(/^/, '[').replace(/$/, ']') : '[]' }},\n  \"q_organization_keyword_tags\": {{ $json.secteur_entreprise ? $json.secteur_entreprise.split(',').map(s => '\"' + s.trim() + '\"').join(',').replace(/^/, '[').replace(/$/, ']') : '[]' }},\n  \"page\": 1,\n  \"per_page\": {{ $json.nb_leads || 20 }}\n}",
+        "options": {
+          "response": {
+            "response": {}
+          }
+        }
+      },
+      "id": "apollo-search",
+      "name": "Rechercher leads (Apollo)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1040,
+        464
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "N8N_RESOURCE_ID_13",
+          "name": "Apollo API Key"
+        }
+      },
+      "disabled": false
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "people",
+        "options": {}
+      },
+      "id": "split-apollo",
+      "name": "Split resultats Apollo",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1264,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "apollo_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "a2",
+              "name": "nom",
+              "value": "={{ $json.first_name }}",
+              "type": "string"
+            },
+            {
+              "id": "a3",
+              "name": "titre",
+              "value": "={{ $json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "a4",
+              "name": "organisation",
+              "value": "={{ $json.organization ? $json.organization.name : '' }}",
+              "type": "string"
+            },
+            {
+              "id": "a5",
+              "name": "linkedin_url",
+              "value": "={{ $json.linkedin_url || '' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "clean-leads",
+      "name": "Nettoyer donnees leads",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1488,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "GOOGLE_DOC_ID_01"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Leads"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "persona_id": "={{ $('Lire Personas valides').item.json.titre_poste }}",
+            "entreprise_id": "={{ $('Lire Personas valides').item.json.entreprise_id }}",
+            "apollo_id": "={{ $json.apollo_id }}",
+            "nom": "={{ $json.nom }}",
+            "titre": "={{ $json.titre }}",
+            "organisation": "={{ $json.organisation }}",
+            "linkedin_url": "={{ $json.linkedin_url }}",
+            "linkedin_username": "",
+            "email": "",
+            "email_status": "",
+            "extract_username_status": "pending",
+            "contacts_scrape_status": "pending",
+            "profile_summary_scrape": "pending",
+            "posts_scrape_status": "unscraped",
+            "resume_profil": "",
+            "resume_posts": "",
+            "score_global": ""
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "persona_id",
+              "displayName": "persona_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "entreprise_id",
+              "displayName": "entreprise_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "apollo_id",
+              "displayName": "apollo_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "nom",
+              "displayName": "nom",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "titre",
+              "displayName": "titre",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "organisation",
+              "displayName": "organisation",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "linkedin_url",
+              "displayName": "linkedin_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "linkedin_username",
+              "displayName": "linkedin_username",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email_status",
+              "displayName": "email_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "extract_username_status",
+              "displayName": "extract_username_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "contacts_scrape_status",
+              "displayName": "contacts_scrape_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "profile_summary_scrape",
+              "displayName": "profile_summary_scrape",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "posts_scrape_status",
+              "displayName": "posts_scrape_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "resume_profil",
+              "displayName": "resume_profil",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "resume_posts",
+              "displayName": "resume_posts",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "score_global",
+              "displayName": "score_global",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "insert-leads",
+      "name": "Inserer leads",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1712,
+        464
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_03",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "GOOGLE_DOC_ID_01"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Personas"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "titre_poste": "={{ $('Lire Personas valides').item.json.titre_poste }}",
+            "entreprise_id": "={{ $('Lire Personas valides').item.json.entreprise_id }}",
+            "statut": "traite"
+          },
+          "matchingColumns": [
+            "titre_poste",
+            "entreprise_id"
+          ],
+          "schema": [
+            {
+              "id": "titre_poste",
+              "displayName": "titre_poste",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "entreprise_id",
+              "displayName": "entreprise_id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "statut",
+              "displayName": "statut",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "statut-persona-traite",
+      "name": "Statut persona traite",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1936,
+        464
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_03",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "trigger-branche-d",
+      "name": "Planifier Extract Username",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        576,
+        832
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "GOOGLE_DOC_ID_01"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Leads"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "extract_username_status",
+              "lookupValue": "pending"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "read-leads-username",
+      "name": "Lire Leads username pending",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        800,
+        832
+      ],
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_03",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return {\n  json: {\n    apollo_id: $json.apollo_id,\n    linkedin_handle: ($json.linkedin_url || '')\n      .replace(/^https?:\\/\\//, '')\n      .replace(/^www\\.linkedin\\.com\\/in\\//, '')\n      .replace(/^linkedin\\.com\\/in\\//, '')\n      .replace(/\\/$/, '')\n  }\n};"
+      },
+      "id": "extract-username",
+      "name": "Extraire username LinkedIn",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1024,
+        832
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "GOOGLE_DOC_ID_01"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Leads"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "apollo_id": "={{ $json.apollo_id }}",
+            "linkedin_username": "={{ $json.linkedin_handle }}",
+            "extract_username_status": "finished"
+          },
+          "matchingColumns": [
+            "apollo_id"
+          ],
+          "schema": [
+            {
+              "id": "apollo_id",
+              "displayName": "apollo_id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "linkedin_username",
+              "displayName": "linkedin_username",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "extract_username_status",
+              "displayName": "extract_username_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "update-username",
+      "name": "Ajouter username LinkedIn",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1248,
+        832
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_03",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "trigger-branche-e",
+      "name": "Planifier Scrape Contacts",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        560,
+        1200
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "GOOGLE_DOC_ID_01"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Leads"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "contacts_scrape_status",
+              "lookupValue": "pending"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "read-leads-contacts",
+      "name": "Lire Leads contacts pending",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        784,
+        1200
+      ],
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_03",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apollo.io/api/v1/people/match",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "reveal_personal_emails",
+              "value": "true"
+            },
+            {
+              "name": "reveal_phone_number",
+              "value": "false"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Cache-Control",
+              "value": "no-cache"
+            },
+            {
+              "name": "accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"id\": \"{{ $json.apollo_id }}\" }",
+        "options": {}
+      },
+      "id": "apollo-email",
+      "name": "Recuperer email (Apollo)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1008,
+        1200
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "N8N_RESOURCE_ID_13",
+          "name": "Apollo API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "var emails = [];\nfor (const item of $input.all()) {\n  if (item.json.person && item.json.person.email != null) {\n    emails.push(item.json.person.email);\n  }\n}\nreturn [{ json: { emails } }];"
+      },
+      "id": "extract-emails-array",
+      "name": "Extraire emails en array",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1232,
+        1200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.mails.so/v1/batch",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-mails-api-key",
+              "value": "={{ $credentials.httpHeaderAuth.value }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ emails: $json.emails }) }}",
+        "options": {}
+      },
+      "id": "mailsso-validate",
+      "name": "Valider emails (mails.so)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1456,
+        1200
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "N8N_RESOURCE_ID_14",
+          "name": "mails.so API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 60
+      },
+      "id": "wait-validation",
+      "name": "Attendre validation",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1680,
+        1200
+      ],
+      "webhookId": "31a27469-ca7c-4177-974d-6995bf9c731c"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.mails.so/v1/batch/{{ $json.id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-mails-api-key",
+              "value": "={{ $credentials.httpHeaderAuth.value }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-validation-results",
+      "name": "Recuperer resultats validation",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1904,
+        1200
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "N8N_RESOURCE_ID_14",
+          "name": "mails.so API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const originalItems = $('Recuperer email (Apollo)').all();\nconst validatedList = $input.first().json.emails || [];\n\nconst validationMap = {};\nfor (const v of validatedList) {\n  validationMap[v.email?.toLowerCase()] = v;\n}\n\nreturn originalItems.map(item => {\n  const person = item.json.person || {};\n  const email = person.email || '';\n  const validation = validationMap[email.toLowerCase()] || {};\n  const linkedinUrl = person.linkedin_url || '';\n  let linkedinUsername = '';\n  if (linkedinUrl) {\n    const match = linkedinUrl.match(/linkedin\\.com\\/in\\/([^/]+)/);\n    if (match) linkedinUsername = match[1];\n  }\n\n  return {\n    json: {\n      apollo_id: person.id,\n      nom: person.name || ((person.first_name || '') + ' ' + (person.last_name || '')).trim(),\n      linkedin_url: linkedinUrl,\n      linkedin_username: linkedinUsername,\n      email: email,\n      email_status: validation.result || '',\n      contacts_scrape_status: email ? (validation.result === 'deliverable' ? 'finished' : (validation.result === 'risky' ? 'finished' : 'invalid_email')) : 'invalid_email',\n      extract_username_status: linkedinUsername ? 'finished' : 'pending'\n    }\n  };\n});\n"
+      },
+      "id": "map-apollo-validation",
+      "name": "Mapper apollo_id et validation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2128,
+        1200
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "GOOGLE_DOC_ID_01"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Leads"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "apollo_id": "={{ $json.apollo_id }}",
+            "nom": "={{ $json.nom }}",
+            "linkedin_url": "={{ $json.linkedin_url }}",
+            "linkedin_username": "={{ $json.linkedin_username }}",
+            "email": "={{ $json.email }}",
+            "email_status": "={{ $json.email_status }}",
+            "contacts_scrape_status": "={{ $json.contacts_scrape_status }}",
+            "extract_username_status": "={{ $json.extract_username_status }}"
+          },
+          "matchingColumns": [
+            "apollo_id"
+          ],
+          "schema": [
+            {
+              "id": "apollo_id",
+              "displayName": "apollo_id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "nom",
+              "displayName": "nom",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "linkedin_url",
+              "displayName": "linkedin_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "linkedin_username",
+              "displayName": "linkedin_username",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email_status",
+              "displayName": "email_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "contacts_scrape_status",
+              "displayName": "contacts_scrape_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "extract_username_status",
+              "displayName": "extract_username_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "update-lead-email",
+      "name": "Ajouter email au lead",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2352,
+        1200
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_03",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "trigger-branche-f",
+      "name": "Planifier Scrape LinkedIn",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        592,
+        1824
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "GOOGLE_DOC_ID_01"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Leads"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "profile_summary_scrape",
+              "lookupValue": "pending"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "read-leads-profil",
+      "name": "Lire Leads profil pending",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        816,
+        1728
+      ],
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_03",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "GOOGLE_DOC_ID_01"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Offres"
+        },
+        "options": {}
+      },
+      "id": "read-offres-scoring",
+      "name": "Lire offres pour scoring",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        816,
+        1920
+      ],
+      "alwaysOutputData": true,
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_03",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "s1",
+              "name": "apollo_id",
+              "value": "={{ $json.apollo_id }}",
+              "type": "string"
+            },
+            {
+              "id": "s2",
+              "name": "row_number",
+              "value": "={{ $json.row_number }}",
+              "type": "string"
+            },
+            {
+              "id": "s3",
+              "name": "linkedinUrl",
+              "value": "={{ $json.linkedin_url }}",
+              "type": "string"
+            },
+            {
+              "id": "s4",
+              "name": "entreprise_id",
+              "value": "={{ $json.entreprise_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "prep-linkedin-urls",
+      "name": "Preparer URLs LinkedIn",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1040,
+        1728
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/apimaestro~linkedin-profile-posts/run-sync-get-dataset-items",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"username\": \"{{ $json.linkedinUrl }}\",\n  \"total_posts\": 5,\n  \"limit\": 5\n}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 10
+            }
+          }
+        }
+      },
+      "id": "apify-posts",
+      "name": "Scraper posts LinkedIn (Apify)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1264,
+        1584
+      ],
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "N8N_RESOURCE_ID_15",
+          "name": "Apify API Token"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/dev_fusion~linkedin-profile-scraper/run-sync-get-dataset-items",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"profileUrls\": [\"{{ $json.linkedinUrl }}\"]\n}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 10
+            }
+          }
+        }
+      },
+      "id": "apify-profil",
+      "name": "Scraper profil LinkedIn (Apify)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1264,
+        1920
+      ],
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "N8N_RESOURCE_ID_15",
+          "name": "Apify API Token"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst prepData = $('Preparer URLs LinkedIn').all();\nconst groups = {};\n\nfor (let i = 0; i < items.length; i++) {\n  const j = items[i].json;\n  // Utiliser pairedItem pour matcher avec les donnees originales\n  const pairedIndex = items[i].pairedItem?.item ?? i;\n  const prep = prepData[pairedIndex]?.json || {};\n  const key = prep.apollo_id || `item_${i}`;\n\n  if (!groups[key]) {\n    groups[key] = {\n      apollo_id: prep.apollo_id,\n      row_number: prep.row_number,\n      linkedinUrl: prep.linkedinUrl,\n      postTexts: []\n    };\n  }\n\n  // Gerer les differents noms de champs possibles d'Apify\n  const text = j.postText || j.text || j.content || j.postContent || '';\n  if (text) groups[key].postTexts.push(text);\n}\n\nreturn Object.values(groups).map(obj => ({\n  json: {\n    ...obj,\n    allPosts: obj.postTexts.join('\\n\\n')\n  }\n}));\n"
+      },
+      "id": "clean-posts",
+      "name": "Nettoyer et mapper posts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1488,
+        1584
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputItems = $input.all();\nconst prepData = $('Preparer URLs LinkedIn').all();\nconst items = [];\n\nif (!inputItems || inputItems.length === 0) {\n  return [{ json: { message: 'No profiles found' } }];\n}\n\ninputItems.forEach((profile, index) => {\n  const data = profile.json;\n  // Utiliser pairedItem pour matcher avec les donnees originales\n  const pairedIndex = profile.pairedItem?.item ?? index;\n  const prep = prepData[pairedIndex]?.json || {};\n  const apolloId = prep.apollo_id || `profile_${index}`;\n  const rowNumber = prep.row_number || null;\n  const linkedinUrl = prep.linkedinUrl || '';\n\n  if (!data || data.message) {\n    items.push({ json: { apollo_id: apolloId, row_number: rowNumber, linkedin_url: linkedinUrl, message: 'No profile found' } });\n    return;\n  }\n\n  const exclude = ['apollo_id', 'row_number', 'linkedin_url'];\n  const profileData = {\n    apollo_id: apolloId,\n    row_number: rowNumber,\n    linkedin_url: linkedinUrl,\n    fullName: data.fullName || `${data.firstName || ''} ${data.lastName || ''}`.trim(),\n    headline: data.headline || 'No headline',\n    currentPosition: data.jobTitle || 'Not specified',\n    currentCompany: data.companyName || 'Not specified',\n    location: data.addressWithoutCountry || 'Not specified',\n    about: (data.about || 'No about section').substring(0, 500),\n    connections: data.connections || 0,\n    followers: data.followers || 0\n  };\n\n  const parts = [];\n  for (const [key, value] of Object.entries(profileData)) {\n    if (!exclude.includes(key) && value && value !== '') {\n      parts.push(`${key}: ${value}`);\n    }\n  }\n  profileData.profileSummary = parts.join('\\n');\n  items.push({ json: profileData });\n});\n\nreturn items;\n"
+      },
+      "id": "clean-profil",
+      "name": "Nettoyer et mapper profil",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1488,
+        1968
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [{\"parts\": [{\"text\": {{ JSON.stringify(\"Below are the most recent posts and reposts from a LinkedIn user. Summarize them collectively in no more than two short paragraphs. Focus on capturing the main themes, tone, and any recurring interests or professional concerns. Avoid listing each post separately — instead, synthesize the information into a narrative that gives a clear idea of what this person is currently focused on or passionate about.\\n\\nPosts: \" + $json.allPosts + \"\\n\\nKeep it insightful but brief — no more than 2 concise paragraphs.\") }}  }]}],\n  \"generationConfig\": {\"temperature\": 0.3}\n}",
+        "options": {}
+      },
+      "id": "gemini-posts",
+      "name": "Resumer posts (Gemini)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1712,
+        1584
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "N8N_RESOURCE_ID_06",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [{\"parts\": [{\"text\": {{ JSON.stringify(\"Please summarize the following linkedin profile data for a lead I want to cold email. I want to combine this summary with another information about them to send personalized emails, so please make sure you include relevant bits in the summary. DO NOT include disclaimers about what this is. Simply provide a summary of the profile. No other fluff about how we can target them, etc.\\n\\nLinkedin Profile Data:\\n\" + $json.profileSummary) }}  }]}],\n  \"generationConfig\": {\"temperature\": 0.3}\n}",
+        "options": {}
+      },
+      "id": "gemini-profil",
+      "name": "Resumer profil (Gemini)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1712,
+        1968
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "N8N_RESOURCE_ID_06",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const offresData = $('Lire offres pour scoring').all().map(i => i.json);\nconst resumePosts = $('Resumer posts (Gemini)').all();\nconst resumeProfil = $('Resumer profil (Gemini)').all();\nconst leadsData = $('Lire Leads profil pending').all();\n\nconst results = [];\n\nfor (let i = 0; i < leadsData.length; i++) {\n  const lead = leadsData[i].json;\n  const postsSummary = (resumePosts[i]?.json?.candidates?.[0]?.content?.parts?.[0]?.text || '').toLowerCase();\n  const profilSummary = (resumeProfil[i]?.json?.candidates?.[0]?.content?.parts?.[0]?.text || '').toLowerCase();\n  const leadTitle = (lead.titre || '').toLowerCase();\n\n  const scoreParOffre = {};\n  let totalScore = 0;\n\n  for (const offre of offresData) {\n    let score = 0;\n    const motsCles = (offre.mots_cles || '').split(',').map(m => m.trim().toLowerCase()).filter(m => m);\n    const cibleIdeale = (offre.cible_ideale || '').toLowerCase();\n\n    if (cibleIdeale && leadTitle) {\n      const cibleWords = cibleIdeale.split(/\\s+/);\n      const matchCount = cibleWords.filter(w => leadTitle.includes(w)).length;\n      if (matchCount >= 2 || leadTitle.includes(cibleIdeale)) {\n        score += 30;\n      } else if (matchCount >= 1) {\n        score += 15;\n      }\n    }\n\n    for (const mc of motsCles) {\n      if (profilSummary.includes(mc)) score += 10;\n    }\n\n    for (const mc of motsCles) {\n      if (postsSummary.includes(mc)) score += 5;\n    }\n\n    const seniorityHigh = ['vp', 'c_suite', 'owner', 'founder', 'partner', 'director', 'head'];\n    if (seniorityHigh.some(s => leadTitle.includes(s.replace('_', ' ')) || leadTitle.includes(s))) {\n      score += 15;\n    }\n\n    const maxPossible = 30 + (motsCles.length * 10) + (motsCles.length * 5) + 15;\n    const normalized = maxPossible > 0 ? Math.round((score / maxPossible) * 100) : 0;\n\n    scoreParOffre[offre.nom_offre] = normalized;\n    totalScore += normalized;\n  }\n\n  const scoreGlobal = offresData.length > 0 ? Math.round(totalScore / offresData.length) : 0;\n\n  results.push({\n    json: {\n      apollo_id: lead.apollo_id,\n      resume_profil: profilSummary,\n      resume_posts: postsSummary,\n      score_global: scoreGlobal,\n      score_par_offre: JSON.stringify(scoreParOffre),\n      profile_summary_scrape: 'finished',\n      posts_scrape_status: 'finished'\n    }\n  });\n}\n\nreturn results;"
+      },
+      "id": "scorer-leads",
+      "name": "Scorer leads",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1936,
+        1680
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "GOOGLE_DOC_ID_01"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Leads"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "apollo_id": "={{ $json.apollo_id }}",
+            "resume_profil": "={{ $json.resume_profil }}",
+            "resume_posts": "={{ $json.resume_posts }}",
+            "score_global": "={{ $json.score_global }}",
+            "score_par_offre": "={{ $json.score_par_offre }}",
+            "profile_summary_scrape": "={{ $json.profile_summary_scrape }}",
+            "posts_scrape_status": "={{ $json.posts_scrape_status }}"
+          },
+          "matchingColumns": [
+            "apollo_id"
+          ],
+          "schema": [
+            {
+              "id": "apollo_id",
+              "displayName": "apollo_id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "resume_profil",
+              "displayName": "resume_profil",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "resume_posts",
+              "displayName": "resume_posts",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "score_global",
+              "displayName": "score_global",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "score_par_offre",
+              "displayName": "score_par_offre",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "profile_summary_scrape",
+              "displayName": "profile_summary_scrape",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "posts_scrape_status",
+              "displayName": "posts_scrape_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "update-profil-score",
+      "name": "Mettre a jour profil et score",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2160,
+        1680
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_03",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "GOOGLE_DOC_ID_01"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Leads"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "apollo_id": "={{ $json.apollo_id }}",
+            "profile_summary_scrape": "failed",
+            "posts_scrape_status": "failed"
+          },
+          "matchingColumns": [
+            "apollo_id"
+          ],
+          "schema": [
+            {
+              "id": "apollo_id",
+              "displayName": "apollo_id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "profile_summary_scrape",
+              "displayName": "profile_summary_scrape",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "posts_scrape_status",
+              "displayName": "posts_scrape_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "scrape-failed",
+      "name": "Statut scrape failed",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1488,
+        1776
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_03",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "weeksInterval": 4,
+              "triggerAtDay": [
+                2
+              ],
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "id": "maint-email-trigger",
+      "name": "Maintenance emails invalides",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        3504,
+        -400
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "GOOGLE_DOC_ID_01"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Leads"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "contacts_scrape_status",
+              "lookupValue": "invalid_email"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "maint-email-read",
+      "name": "Lire leads email invalide",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        3728,
+        -400
+      ],
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_03",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "GOOGLE_DOC_ID_01"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Leads"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "apollo_id": "={{ $json.apollo_id }}",
+            "contacts_scrape_status": "pending"
+          },
+          "matchingColumns": [
+            "apollo_id"
+          ],
+          "schema": [
+            {
+              "id": "apollo_id",
+              "displayName": "apollo_id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "contacts_scrape_status",
+              "displayName": "contacts_scrape_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "maint-email-reset",
+      "name": "Reset email a pending",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        3952,
+        -400
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_03",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "weeksInterval": 4,
+              "triggerAtDay": [
+                2
+              ],
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "id": "maint-profil-trigger",
+      "name": "Maintenance profil failed",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        3504,
+        -176
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "GOOGLE_DOC_ID_01"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Leads"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "profile_summary_scrape",
+              "lookupValue": "failed"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "maint-profil-read",
+      "name": "Lire leads profil failed",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        3728,
+        -176
+      ],
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_03",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "GOOGLE_DOC_ID_01"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Leads"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "apollo_id": "={{ $json.apollo_id }}",
+            "profile_summary_scrape": "pending"
+          },
+          "matchingColumns": [
+            "apollo_id"
+          ],
+          "schema": [
+            {
+              "id": "apollo_id",
+              "displayName": "apollo_id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "profile_summary_scrape",
+              "displayName": "profile_summary_scrape",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "maint-profil-reset",
+      "name": "Reset profil a pending",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        3952,
+        -176
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_03",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "weeksInterval": 4,
+              "triggerAtDay": [
+                2
+              ],
+              "triggerAtHour": 10
+            }
+          ]
+        }
+      },
+      "id": "maint-posts-trigger",
+      "name": "Maintenance posts failed",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        3504,
+        48
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "GOOGLE_DOC_ID_01"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Leads"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "posts_scrape_status",
+              "lookupValue": "failed"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "maint-posts-read",
+      "name": "Lire leads posts failed",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        3728,
+        48
+      ],
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_03",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "GOOGLE_DOC_ID_01"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Leads"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "apollo_id": "={{ $json.apollo_id }}",
+            "posts_scrape_status": "unscraped"
+          },
+          "matchingColumns": [
+            "apollo_id"
+          ],
+          "schema": [
+            {
+              "id": "apollo_id",
+              "displayName": "apollo_id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "posts_scrape_status",
+              "displayName": "posts_scrape_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "maint-posts-reset",
+      "name": "Reset posts a unscraped",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        3952,
+        48
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_03",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const markdown = $input.first().json.data;\nconst sourceUrl = $('Lire Entreprises a analyser').first().json.url;\n\nlet baseDomain;\ntry {\n  baseDomain = new URL(sourceUrl.startsWith('http') ? sourceUrl : 'https://' + sourceUrl).hostname;\n} catch(e) {\n  baseDomain = sourceUrl.replace(/^https?:\\/\\//, '').split('/')[0];\n}\n\nconst linkRegex = /\\[([^\\]]*)\\]\\((https?:\\/\\/[^)]+)\\)/g;\nconst links = new Set();\nlet match;\n\nwhile ((match = linkRegex.exec(markdown)) !== null) {\n  try {\n    const url = new URL(match[2]);\n    if (url.hostname === baseDomain || url.hostname === 'www.' + baseDomain || baseDomain === 'www.' + url.hostname) {\n      const path = url.pathname.replace(/\\/$/, '');\n      const segments = path.split('/').filter(s => s);\n      if (segments.length === 1 && !path.match(/\\.(jpg|png|svg|gif|css|js|pdf|webp|ico|woff)/i) && !path.match(/^\\/(wp-|feed|xmlrpc|#)/)) {\n        links.add(url.origin + '/' + segments[0] + '/');\n      }\n    }\n  } catch(e) {}\n}\n\nconst subpages = [...links].slice(0, 5);\n\nif (subpages.length === 0) {\n  return [{ json: { subpage_url: '', skip: true } }];\n}\n\nreturn subpages.map(url => ({ json: { subpage_url: url, skip: false } }));"
+      },
+      "id": "extract-links",
+      "name": "Extraire liens internes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1264,
+        -352
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://r.jina.ai/{{ $json.subpage_url }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "scrape-subpages",
+      "name": "Scraper pages internes (Jina)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1488,
+        -352
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const homepageContent = $('Scraper site web (Jina)').first().json.data;\nconst subpageItems = $input.all();\n\nlet combined = '=== PAGE PRINCIPALE (ACCUEIL) ===\\n' + homepageContent;\n\nfor (const item of subpageItems) {\n  if (item.json.skip) continue;\n  const content = item.json.data;\n  if (content && content.length > 100) {\n    const url = item.json.subpage_url || 'page interne';\n    combined += '\\n\\n=== PAGE : ' + url + ' ===\\n' + content;\n  }\n}\n\nreturn [{ json: { data: combined } }];"
+      },
+      "id": "merge-content",
+      "name": "Fusionner contenus",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1712,
+        -352
+      ]
+    }
+  ],
+  "connections": {
+    "Planifier Analyse Entreprise": {
+      "main": [
+        [
+          {
+            "node": "Lire Entreprises a analyser",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lire Entreprises a analyser": {
+      "main": [
+        [
+          {
+            "node": "Scraper site web (Jina)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyser entreprise (Gemini)": {
+      "main": [
+        [
+          {
+            "node": "Parser reponse Gemini",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parser reponse Gemini": {
+      "main": [
+        [
+          {
+            "node": "Mettre a jour fiche entreprise",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Extraire offres",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraire offres": {
+      "main": [
+        [
+          {
+            "node": "Inserer offres",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Planifier Generation Personas": {
+      "main": [
+        [
+          {
+            "node": "Lire Entreprises a generer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lire Entreprises a generer": {
+      "main": [
+        [
+          {
+            "node": "Lire offres entreprise",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lire offres entreprise": {
+      "main": [
+        [
+          {
+            "node": "Preparer contexte personas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparer contexte personas": {
+      "main": [
+        [
+          {
+            "node": "Generer personas (Gemini)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generer personas (Gemini)": {
+      "main": [
+        [
+          {
+            "node": "Parser personas Gemini",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parser personas Gemini": {
+      "main": [
+        [
+          {
+            "node": "Extraire personas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraire personas": {
+      "main": [
+        [
+          {
+            "node": "Inserer personas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inserer personas": {
+      "main": [
+        [
+          {
+            "node": "Statut personas generes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Planifier Recherche Apollo": {
+      "main": [
+        [
+          {
+            "node": "Lire Personas valides",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lire Personas valides": {
+      "main": [
+        [
+          {
+            "node": "Rechercher leads (Apollo)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rechercher leads (Apollo)": {
+      "main": [
+        [
+          {
+            "node": "Split resultats Apollo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split resultats Apollo": {
+      "main": [
+        [
+          {
+            "node": "Nettoyer donnees leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Nettoyer donnees leads": {
+      "main": [
+        [
+          {
+            "node": "Inserer leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inserer leads": {
+      "main": [
+        [
+          {
+            "node": "Statut persona traite",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Planifier Extract Username": {
+      "main": [
+        [
+          {
+            "node": "Lire Leads username pending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lire Leads username pending": {
+      "main": [
+        [
+          {
+            "node": "Extraire username LinkedIn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraire username LinkedIn": {
+      "main": [
+        [
+          {
+            "node": "Ajouter username LinkedIn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Planifier Scrape Contacts": {
+      "main": [
+        [
+          {
+            "node": "Lire Leads contacts pending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lire Leads contacts pending": {
+      "main": [
+        [
+          {
+            "node": "Recuperer email (Apollo)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recuperer email (Apollo)": {
+      "main": [
+        [
+          {
+            "node": "Extraire emails en array",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraire emails en array": {
+      "main": [
+        [
+          {
+            "node": "Valider emails (mails.so)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valider emails (mails.so)": {
+      "main": [
+        [
+          {
+            "node": "Attendre validation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Attendre validation": {
+      "main": [
+        [
+          {
+            "node": "Recuperer resultats validation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recuperer resultats validation": {
+      "main": [
+        [
+          {
+            "node": "Mapper apollo_id et validation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mapper apollo_id et validation": {
+      "main": [
+        [
+          {
+            "node": "Ajouter email au lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Planifier Scrape LinkedIn": {
+      "main": [
+        [
+          {
+            "node": "Lire Leads profil pending",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Lire offres pour scoring",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lire Leads profil pending": {
+      "main": [
+        [
+          {
+            "node": "Preparer URLs LinkedIn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparer URLs LinkedIn": {
+      "main": [
+        [
+          {
+            "node": "Scraper posts LinkedIn (Apify)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Scraper profil LinkedIn (Apify)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scraper posts LinkedIn (Apify)": {
+      "main": [
+        [
+          {
+            "node": "Nettoyer et mapper posts",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Statut scrape failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scraper profil LinkedIn (Apify)": {
+      "main": [
+        [
+          {
+            "node": "Nettoyer et mapper profil",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Statut scrape failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Nettoyer et mapper posts": {
+      "main": [
+        [
+          {
+            "node": "Resumer posts (Gemini)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Nettoyer et mapper profil": {
+      "main": [
+        [
+          {
+            "node": "Resumer profil (Gemini)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resumer posts (Gemini)": {
+      "main": [
+        [
+          {
+            "node": "Scorer leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resumer profil (Gemini)": {
+      "main": [
+        [
+          {
+            "node": "Scorer leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scorer leads": {
+      "main": [
+        [
+          {
+            "node": "Mettre a jour profil et score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Maintenance emails invalides": {
+      "main": [
+        [
+          {
+            "node": "Lire leads email invalide",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lire leads email invalide": {
+      "main": [
+        [
+          {
+            "node": "Reset email a pending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Maintenance profil failed": {
+      "main": [
+        [
+          {
+            "node": "Lire leads profil failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lire leads profil failed": {
+      "main": [
+        [
+          {
+            "node": "Reset profil a pending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Maintenance posts failed": {
+      "main": [
+        [
+          {
+            "node": "Lire leads posts failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lire leads posts failed": {
+      "main": [
+        [
+          {
+            "node": "Reset posts a unscraped",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scraper site web (Jina)": {
+      "main": [
+        [
+          {
+            "node": "Extraire liens internes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraire liens internes": {
+      "main": [
+        [
+          {
+            "node": "Scraper pages internes (Jina)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scraper pages internes (Jina)": {
+      "main": [
+        [
+          {
+            "node": "Fusionner contenus",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fusionner contenus": {
+      "main": [
+        [
+          {
+            "node": "Analyser entreprise (Gemini)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lire offres pour scoring": {
+      "main": [
+        [
+          {
+            "node": "Scorer leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "errorWorkflow": "bAurtiK8UqF7Mlw6",
+    "timeSavedMode": "fixed",
+    "binaryMode": "separate"
+  },
+  "meta": null,
+  "versionId": "b97ed030-6869-4467-a793-a8a8457ff724",
+  "activeVersionId": null,
+  "versionCounter": 173,
+  "triggerCount": 9,
+  "shared": [
+    {
+      "updatedAt": "2026-02-17T19:55:57.353Z",
+      "createdAt": "2026-02-17T19:55:57.353Z",
+      "role": "workflow:owner",
+      "workflowId": "N8N_RESOURCE_ID_09",
+      "projectId": "N8N_RESOURCE_ID_19",
+      "project": {
+        "updatedAt": "2025-11-25T08:00:54.992Z",
+        "createdAt": "2025-11-25T07:59:08.960Z",
+        "id": "N8N_RESOURCE_ID_19",
+        "name": "Alex Martin <contact@example.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "f0076426-ba7b-4097-be5a-9830aa9c1ec6",
+        "projectRelations": [
+          {
+            "updatedAt": "2025-11-25T07:59:08.960Z",
+            "createdAt": "2025-11-25T07:59:08.960Z",
+            "userId": "f0076426-ba7b-4097-be5a-9830aa9c1ec6",
+            "projectId": "N8N_RESOURCE_ID_19",
+            "user": {
+              "updatedAt": "2026-02-17T23:26:45.000Z",
+              "createdAt": "2025-11-25T07:59:08.653Z",
+              "id": "f0076426-ba7b-4097-be5a-9830aa9c1ec6",
+              "email": "contact@example.com",
+              "firstName": "Alex",
+              "lastName": "Martin",
+              "personalizationAnswers": {
+                "version": "v4",
+                "personalization_survey_submitted_at": "2025-11-25T08:01:48.560Z",
+                "personalization_survey_n8n_version": "1.120.4",
+                "companySize": "<20",
+                "companyType": "digital-agency",
+                "role": "business-owner",
+                "reportedSource": "linkedin"
+              },
+              "settings": {
+                "userActivated": true,
+                "easyAIWorkflowOnboarded": true,
+                "firstSuccessfulWorkflowId": "bAurtiK8UqF7Mlw6",
+                "userActivatedAt": 1771362744457
+              },
+              "disabled": false,
+              "mfaEnabled": false,
+              "lastActiveAt": "2026-02-17",
+              "isPending": false
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": null
+}

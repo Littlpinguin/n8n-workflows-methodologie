@@ -1,0 +1,520 @@
+{
+  "id": "N8N_RESOURCE_ID_01",
+  "name": "Gmail - Inbox Genie",
+  "active": false,
+  "nodes": [
+    {
+      "id": "schedule-trigger-1",
+      "name": "Declencheur quotidien",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [128, 400],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "gmail-getall-1",
+      "name": "Recevoir emails non lus",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [352, 400],
+      "parameters": {
+        "operation": "getAll",
+        "simple": false,
+        "filters": {
+          "labelIds": ["INBOX"],
+          "q": "-label:Recrutement -from:me",
+          "readStatus": "unread"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "N8N_RESOURCE_ID_10",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "id": "gdrive-search-1",
+      "name": "Chercher profil business",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [592, 400],
+      "parameters": {
+        "resource": "fileFolder",
+        "limit": 1,
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "GOOGLE_DOC_ID_13",
+            "mode": "id"
+          }
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_18",
+          "name": "Google Drive account"
+        }
+      },
+      "alwaysOutputData": true,
+      "executeOnce": true
+    },
+    {
+      "id": "gdrive-download-1",
+      "name": "Telecharger profil business",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [768, 400],
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {
+          "googleFileConversion": {
+            "conversion": {
+              "docsToFormat": "text/plain"
+            }
+          }
+        }
+      },
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_18",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "id": "extract-text-1",
+      "name": "Extraire texte profil",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [1072, 400],
+      "parameters": {
+        "operation": "text",
+        "destinationKey": "profilBusiness",
+        "options": {}
+      }
+    },
+    {
+      "id": "d599c3fb-3027-4bd3-99b0-bf4ff10adf24",
+      "name": "Construire prompt classification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1296, 400],
+      "parameters": {
+        "jsCode": "const allEmails = $('Recevoir emails non lus').all();\nconst profilBusiness = $json.profilBusiness || '';\n\nconst emailSummaries = allEmails.map((item, idx) => {\n  const e = item.json;\n  const body = (e.text || e.textAsHtml || '').substring(0, 500);\n  return `### Email ${idx + 1}\\nID: ${e.id}\\nFrom: ${e.headers?.from || e.from || 'inconnu'}\\nSubject: ${e.headers?.subject || e.subject || '(sans sujet)'}\\nBody: ${body}`;\n}).join('\\n\\n');\n\nconst systemPrompt = `Tu es un assistant de tri d'emails pour un professionnel. Voici son profil :\\n\\n${profilBusiness}\\n\\n# Labels disponibles\\n- Client : email d'un client existant (relation etablie, projet en cours)\\n- Prospect : demande entrante legitime, inbound, premier contact sincere\\n- Admin : factures, contrats, comptabilite, administratif\\n- Newsletter : newsletters, contenus par abonnement\\n- Cold Email : prospection commerciale non sollicitee\\n- Notification : alertes systemes, confirmations automatiques, SaaS\\n\\n# Regles\\n- Chaque email recoit exactement 1 label\\n- needsReply = true UNIQUEMENT pour Client, Prospect, et Admin quand une reponse est clairement attendue\\n- needsReply = false pour Newsletter, Cold Email, Notification, et Admin sans question directe\\n\\n# Output\\nRetourne un array JSON. Pour chaque email :\\n{ \\\"id\\\": \\\"gmail_message_id\\\", \\\"label\\\": \\\"un_seul_label\\\", \\\"needsReply\\\": true/false, \\\"reason\\\": \\\"explication courte\\\" }`;\n\nconst userPrompt = `Voici les emails a classifier :\\n\\n${emailSummaries}`;\n\nconst requestBody = {\n  contents: [{ role: 'user', parts: [{ text: userPrompt }] }],\n  systemInstruction: { parts: [{ text: systemPrompt }] },\n  generationConfig: {\n    temperature: 0.2,\n    responseMimeType: 'application/json'\n  }\n};\n\nreturn [{ json: { requestBody, profilBusiness, emailCount: allEmails.length } }];"
+      }
+    },
+    {
+      "id": "29d122f0-8dd9-453f-9272-dff93fa94aa8",
+      "name": "Classifier via Gemini",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1520, 400],
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.requestBody) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "credentials": {
+        "googlePalmApi": {
+          "id": "N8N_RESOURCE_ID_06",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000
+    },
+    {
+      "id": "e23e2532-e89b-40ac-ba5f-2270229ffd95",
+      "name": "Parser classifications",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1744, 400],
+      "parameters": {
+        "jsCode": "const response = $json.candidates[0].content.parts[0].text;\nconst classifications = JSON.parse(response);\nconst allEmails = $('Recevoir emails non lus').all();\nconst profilBusiness = $('Construire prompt classification').first().json.profilBusiness;\n\nconst toArray = (v) => Array.isArray(v) ? v : (typeof v === 'string' && v ? [v] : []);\nconst classArray = toArray(classifications);\n\nreturn allEmails.map((emailItem, idx) => {\n  const email = emailItem.json;\n  const classification = classArray.find(c => c.id === email.id) || classArray[idx] || { label: 'Notification', needsReply: false, reason: 'Non classifie' };\n  \n  const fromText = typeof email.from === 'string' ? email.from : (email.from?.text || email.from?.value?.[0]?.address || '');\n  const subjectText = typeof email.subject === 'string' ? email.subject : '';\n  \n  return {\n    json: {\n      emailId: email.id,\n      threadId: email.threadId,\n      from: fromText,\n      subject: subjectText,\n      body: email.text || email.textAsHtml || '',\n      label: classification.label,\n      needsReply: classification.needsReply === true,\n      reason: classification.reason || '',\n      profilBusiness\n    }\n  };\n});"
+      }
+    },
+    {
+      "id": "60530d99-d808-4a4e-96fe-3786938fc09d",
+      "name": "Recuperer labels Gmail",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1968, 400],
+      "parameters": {
+        "resource": "label",
+        "returnAll": true
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "N8N_RESOURCE_ID_10",
+          "name": "Gmail account"
+        }
+      },
+      "executeOnce": true
+    },
+    {
+      "id": "02989ffb-3886-441a-98b0-1820db0bbf12",
+      "name": "Mapper et appliquer labels",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2192, 400],
+      "parameters": {
+        "jsCode": "const labels = $('Recuperer labels Gmail').all().map(i => i.json);\nconst items = $('Parser classifications').all();\n\nreturn items.map(item => {\n  const email = item.json;\n  const gmailLabel = labels.find(l => l.name === email.label);\n  return {\n    json: {\n      ...email,\n      labelId: gmailLabel ? gmailLabel.id : null\n    }\n  };\n});"
+      }
+    },
+    {
+      "id": "6c27216f-8c18-49d5-b547-17883fdc57a1",
+      "name": "Labelliser email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [2416, 112],
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{ $json.emailId }}",
+        "labelIds": "={{ [$json.labelId] }}"
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "N8N_RESOURCE_ID_10",
+          "name": "Gmail account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "dc5d57af-4423-45ec-a2ee-c95b03766c27",
+      "name": "Reponse necessaire",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [2416, 304],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose",
+            "looseTypeValidation": true
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.needsReply }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "sheets-read-faq",
+      "name": "Lire FAQ Base",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [2592, 240],
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "GOOGLE_DOC_ID_10"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "FAQ"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_03",
+          "name": "Google Sheets account"
+        }
+      },
+      "executeOnce": true
+    },
+    {
+      "id": "40d21c17-b442-4351-b1c7-5953f62f855d",
+      "name": "Construire prompt brouillon",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2752, 304],
+      "parameters": {
+        "jsCode": "const email = $json;\nconst faqItems = $('Lire FAQ Base').all();\n\nlet faqSection = '';\nif (faqItems && faqItems.length > 0) {\n  const faqEntries = faqItems\n    .filter(item => item.json.Question && item.json.Reponse)\n    .map(item => `Q: ${item.json.Question}\\nR: ${item.json.Reponse}`)\n    .join('\\n\\n');\n\n  if (faqEntries) {\n    faqSection = `\\n\\n# FAQ existante (reponses deja validees)\\nSi une question similaire existe ci-dessous, inspire-toi de la reponse pour rester coherent. Adapte au contexte de l'email, ne copie pas mot pour mot.\\n\\n${faqEntries}`;\n  }\n}\n\nconst systemPrompt = `Tu es l'assistant personnel de l'utilisateur. Tu rediges des brouillons de reponses a ses emails.\n\nVoici son profil business et ses exemples de style :\n${email.profilBusiness}${faqSection}\n\n# Regles\n- Reproduis le ton et le style des exemples d'emails fournis dans le profil\n- Sois concis et professionnel\n- Commence par \"Bonjour,\" ou \"Hello,\" selon la langue de l'email recu\n- Termine par \"Cordialement,\" ou \"Best,\" selon la langue\n- Pour les questions oui/non, redige 2 versions separees par \"------- OU -------\"\n- Si tu ne connais pas la reponse, utilise des placeholders [A COMPLETER]\n- Ne fabrique jamais d'informations\n- Reponds dans la meme langue que l'email recu\n- Format texte brut uniquement, pas de HTML ni markdown`;\n\nconst userPrompt = `Email recu :\\nDe: ${email.from}\\nSujet: ${email.subject}\\nContenu:\\n${email.body}`;\n\nconst requestBody = {\n  contents: [{ role: 'user', parts: [{ text: userPrompt }] }],\n  systemInstruction: { parts: [{ text: systemPrompt }] },\n  generationConfig: {\n    temperature: 0.4\n  }\n};\n\nreturn [{ json: { requestBody, emailId: email.emailId, threadId: email.threadId, from: email.from, subject: email.subject } }];"
+      }
+    },
+    {
+      "id": "b1776064-ae92-4ebd-91af-54a2b1b6bae1",
+      "name": "Generer brouillon via Gemini",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2976, 304],
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.requestBody) }}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "credentials": {
+        "googlePalmApi": {
+          "id": "N8N_RESOURCE_ID_06",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000
+    },
+    {
+      "id": "90540cf6-a0ea-412e-b92b-b9bba51ff711",
+      "name": "Creer brouillon Gmail",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [3200, 304],
+      "parameters": {
+        "resource": "draft",
+        "subject": "=Re: {{ $('Construire prompt brouillon').item.json.subject }}",
+        "emailType": "html",
+        "message": "={{ $json.candidates[0].content.parts[0].text.replace(/\\n/g, '<br />\\n') }}",
+        "options": {
+          "threadId": "={{ $('Construire prompt brouillon').item.json.threadId }}",
+          "sendTo": "={{ $('Construire prompt brouillon').item.json.from }}"
+        }
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "N8N_RESOURCE_ID_10",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "id": "0afa402b-66fd-4149-a801-08ba2192f0b0",
+      "name": "Logger dans Stats",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [2416, 496],
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "GOOGLE_DOC_ID_09",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Feuille 1"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{ $now.format('yyyy-MM-dd HH:mm') }}",
+            "De": "={{ $json.from }}",
+            "Sujet": "={{ $json.subject }}",
+            "Labels": "={{ $json.label }}",
+            "Needs Reply": "={{ $json.needsReply }}",
+            "Brouillon cree": "={{ $json.needsReply ? 'Oui' : 'Non' }}",
+            "Reason": "={{ $json.reason }}"
+          }
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_03",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "id": "d2f4ae9b-2969-4168-a26d-e6198876d785",
+      "name": "Marquer email lu",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [2416, 688],
+      "parameters": {
+        "operation": "markAsRead",
+        "messageId": "={{ $json.emailId }}"
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "N8N_RESOURCE_ID_10",
+          "name": "Gmail account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "6af402b6-451a-460e-b7fa-421e1e4d6c78",
+      "name": "1. Reception emails",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [240, 112],
+      "parameters": {
+        "content": "## 1. Reception emails\nSchedule Trigger quotidien 8h\n+ Gmail getAll (max 50)\nEmails non lus, exclut Recrutement et from:me",
+        "height": 180,
+        "width": 280,
+        "color": 2
+      }
+    },
+    {
+      "id": "1bddb77d-76cb-46f8-bd45-9105e27d17d8",
+      "name": "2. Profil Business",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [592, 112],
+      "parameters": {
+        "content": "## 2. Profil Business\nLit le Google Doc depuis Drive\nDossier /Automatisations/Profil Business/\nContient : entreprise, services, ton, exemples d'emails",
+        "height": 180,
+        "width": 280,
+        "color": 3
+      }
+    },
+    {
+      "id": "2f2e0e39-6125-449f-b4f7-c11420ba1624",
+      "name": "3. Classification batch Gemini",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1424, 112],
+      "parameters": {
+        "content": "## 3. Classification batch Gemini\n1 seul appel pour tous les emails\nBody tronque a 500 chars\n6 labels : Client, Prospect, Admin, Newsletter, Cold Email, Notification",
+        "height": 180,
+        "width": 320,
+        "color": 5
+      }
+    },
+    {
+      "id": "884743e7-12d3-4a12-9be8-124c5581f07f",
+      "name": "4. Application labels Gmail",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [2336, -144],
+      "parameters": {
+        "content": "## 4. Application labels Gmail\nRecupere les IDs des labels\nApplique 1 label par email\ncontinueOnFail si un label echoue",
+        "height": 180,
+        "width": 280,
+        "color": 4
+      }
+    },
+    {
+      "id": "7f65ad11-834f-4a0b-ac86-156b46be34e6",
+      "name": "5. Brouillons de reponse",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [2784, 0],
+      "parameters": {
+        "content": "## 5. Brouillons de reponse\nLit la FAQ Base (Google Sheets, executeOnce)\nInjecte la FAQ dans le prompt Gemini\nCree un brouillon Gmail dans le thread\nUniquement pour needsReply=true",
+        "height": 180,
+        "width": 380,
+        "color": 6
+      }
+    },
+    {
+      "id": "e3206cd0-95bd-4a67-bca4-53e66cf8e694",
+      "name": "6. Logging + Cleanup",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [2352, 896],
+      "parameters": {
+        "content": "## 6. Logging + Cleanup\nLog dans Google Sheets (1 ligne/email)\nMarque les emails comme lus\nStats agregees via formules Sheet",
+        "height": 180,
+        "width": 280,
+        "color": 7
+      }
+    }
+  ],
+  "connections": {
+    "Declencheur quotidien": {
+      "main": [[{"node": "Recevoir emails non lus", "type": "main", "index": 0}]]
+    },
+    "Recevoir emails non lus": {
+      "main": [[{"node": "Chercher profil business", "type": "main", "index": 0}]]
+    },
+    "Chercher profil business": {
+      "main": [[{"node": "Telecharger profil business", "type": "main", "index": 0}]]
+    },
+    "Telecharger profil business": {
+      "main": [[{"node": "Extraire texte profil", "type": "main", "index": 0}]]
+    },
+    "Extraire texte profil": {
+      "main": [[{"node": "Construire prompt classification", "type": "main", "index": 0}]]
+    },
+    "Construire prompt classification": {
+      "main": [[{"node": "Classifier via Gemini", "type": "main", "index": 0}]]
+    },
+    "Classifier via Gemini": {
+      "main": [[{"node": "Parser classifications", "type": "main", "index": 0}]]
+    },
+    "Parser classifications": {
+      "main": [[{"node": "Recuperer labels Gmail", "type": "main", "index": 0}]]
+    },
+    "Recuperer labels Gmail": {
+      "main": [[{"node": "Mapper et appliquer labels", "type": "main", "index": 0}]]
+    },
+    "Mapper et appliquer labels": {
+      "main": [[
+        {"node": "Labelliser email", "type": "main", "index": 0},
+        {"node": "Logger dans Stats", "type": "main", "index": 0},
+        {"node": "Marquer email lu", "type": "main", "index": 0},
+        {"node": "Reponse necessaire", "type": "main", "index": 0}
+      ]]
+    },
+    "Reponse necessaire": {
+      "main": [
+        [{"node": "Lire FAQ Base", "type": "main", "index": 0}],
+        []
+      ]
+    },
+    "Lire FAQ Base": {
+      "main": [[{"node": "Construire prompt brouillon", "type": "main", "index": 0}]]
+    },
+    "Construire prompt brouillon": {
+      "main": [[{"node": "Generer brouillon via Gemini", "type": "main", "index": 0}]]
+    },
+    "Generer brouillon via Gemini": {
+      "main": [[{"node": "Creer brouillon Gmail", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "bAurtiK8UqF7Mlw6"
+  }
+}

@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inbox Genie + FAQ Builder - Schema</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: #faf9f6; }
+
+  .whiteboard {
+    position: relative;
+    width: 1500px;
+    height: 2600px;
+    margin: 0 auto;
+    padding: 50px 60px;
+    background:
+      radial-gradient(circle at 25% 20%, rgba(234,88,12,0.03) 0%, transparent 50%),
+      radial-gradient(circle at 75% 80%, rgba(16,185,129,0.03) 0%, transparent 50%),
+      linear-gradient(rgba(0,0,0,0.012) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,0,0,0.012) 1px, transparent 1px);
+    background-size: 100%, 100%, 40px 40px, 40px 40px;
+  }
+
+  /* Title */
+  .board-title { text-align: center; margin-bottom: 10px; }
+  .board-title h1 { font-family: 'Caveat', cursive; font-size: 3rem; font-weight: 700; color: #1a1a2e; }
+  .board-title .underline { width: 280px; height: 4px; background: linear-gradient(90deg, transparent, #ea580c, #10b981, transparent); margin: 4px auto 8px; border-radius: 2px; }
+  .board-title p { font-size: 0.92rem; color: #64748b; }
+
+  /* Zones */
+  .wf-zone { position: absolute; border-radius: 20px; padding: 28px 32px; z-index: 2; }
+  .wf-zone-title { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .wf-zone-title h2 { font-family: 'Caveat', cursive; font-size: 1.8rem; font-weight: 700; }
+  .wf-badge { font-size: 0.62rem; font-weight: 700; padding: 4px 12px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1.5px; }
+  .freq { font-size: 0.62rem; font-weight: 700; padding: 3px 10px; border-radius: 12px; }
+
+  /* Inbox Genie zone */
+  .zone-genie {
+    top: 160px; left: 40px; width: 1420px;
+    background: linear-gradient(135deg, rgba(234,88,12,0.05), rgba(234,88,12,0.015));
+    border: 2px solid rgba(234,88,12,0.15);
+    box-shadow: 0 4px 24px rgba(234,88,12,0.06);
+  }
+  .zone-genie .wf-zone-title h2 { color: #c2410c; }
+  .zone-genie .wf-badge { background: #fed7aa; color: #c2410c; }
+  .zone-genie .freq { background: #fff7ed; color: #c2410c; border: 1px solid rgba(234,88,12,0.2); }
+
+  /* FAQ Builder zone */
+  .zone-faq {
+    top: 1550px; left: 40px; width: 1420px;
+    background: linear-gradient(135deg, rgba(16,185,129,0.05), rgba(16,185,129,0.015));
+    border: 2px solid rgba(16,185,129,0.15);
+    box-shadow: 0 4px 24px rgba(16,185,129,0.06);
+  }
+  .zone-faq .wf-zone-title h2 { color: #059669; }
+  .zone-faq .wf-badge { background: #d1fae5; color: #065f46; }
+  .zone-faq .freq { background: #ecfdf5; color: #059669; border: 1px solid rgba(16,185,129,0.2); }
+
+  /* Shared Hub */
+  .hub {
+    position: absolute; top: 1080px; left: 50%; transform: translateX(-50%);
+    width: 440px; z-index: 10; background: white;
+    border: 3px solid #7c3aed; border-radius: 20px; padding: 20px 28px;
+    box-shadow: 0 8px 32px rgba(124,58,237,0.12), 0 0 0 6px rgba(124,58,237,0.05);
+    text-align: center;
+  }
+  .hub h3 { font-family: 'Caveat', cursive; font-size: 1.6rem; font-weight: 700; color: #7c3aed; margin-bottom: 6px; }
+  .hub-desc { font-size: 0.78rem; color: #64748b; }
+  .hub-cols { display: flex; justify-content: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .hub-col { font-size: 0.65rem; padding: 3px 10px; border-radius: 6px; background: #ede9fe; color: #6d28d9; font-weight: 600; }
+
+  /* Phase labels */
+  .phase-label { font-family: 'Caveat', cursive; font-size: 1.05rem; font-weight: 600; color: #94a3b8; margin: 14px 0 8px 4px; }
+
+  /* Flow elements */
+  .h-flow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .v-arrow { text-align: center; color: #cbd5e1; font-size: 1.2rem; line-height: 1; margin: 2px 0; }
+  .mini-node {
+    display: flex; align-items: center; gap: 6px; padding: 8px 12px;
+    border-radius: 10px; font-size: 0.78rem; font-weight: 500; background: white;
+    border: 1.5px solid rgba(0,0,0,0.08); box-shadow: 0 1px 4px rgba(0,0,0,0.03); white-space: nowrap;
+  }
+  .mini-arrow { color: #cbd5e1; font-size: 0.9rem; }
+  .step-icon { font-size: 1rem; flex-shrink: 0; }
+  .tech { font-size: 0.58rem; padding: 2px 7px; border-radius: 4px; background: rgba(0,0,0,0.04); color: #94a3b8; font-weight: 600; margin-left: auto; }
+
+  /* Node types */
+  .n-trigger { border-color: rgba(34,197,94,0.3); background: linear-gradient(135deg, #f0fdf4, white); }
+  .n-trigger .step-icon { color: #16a34a; }
+  .n-gmail { border-color: rgba(234,67,53,0.3); background: linear-gradient(135deg, #fef2f2, white); }
+  .n-gmail .step-icon { color: #dc2626; }
+  .n-ai { border-color: rgba(168,85,247,0.3); background: linear-gradient(135deg, #faf5ff, white); }
+  .n-ai .step-icon { color: #7c3aed; }
+  .n-data { border-color: rgba(5,150,105,0.3); background: linear-gradient(135deg, #ecfdf5, white); }
+  .n-data .step-icon { color: #059669; }
+  .n-code { border-color: rgba(59,130,246,0.3); background: linear-gradient(135deg, #eff6ff, white); }
+  .n-code .step-icon { color: #2563eb; }
+  .n-doc { border-color: rgba(100,116,139,0.2); background: linear-gradient(135deg, #f8fafc, white); }
+  .n-doc .step-icon { color: #475569; }
+  .n-logic { border-color: rgba(234,179,8,0.3); background: linear-gradient(135deg, #fefce8, white); }
+  .n-logic .step-icon { color: #ca8a04; }
+
+  /* Parallel branches */
+  .parallel-container { display: flex; gap: 14px; margin-top: 4px; }
+  .branch {
+    flex: 1; background: rgba(255,255,255,0.7); border: 1.5px solid rgba(0,0,0,0.06);
+    border-radius: 12px; padding: 14px 16px;
+  }
+  .branch-title {
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+    margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+  }
+  .branch .h-flow { flex-direction: column; align-items: flex-start; gap: 6px; }
+  .branch .mini-node { width: 100%; }
+
+  /* Condition */
+  .cond-yes { color: #16a34a; }
+  .cond-no { color: #dc2626; }
+
+  /* Connectors HTML */
+  .connector { position: absolute; pointer-events: none; z-index: 3; }
+  .connector-v { width: 3px; border-radius: 2px; }
+  .connector-arrow-down {
+    position: absolute; bottom: -14px; left: 50%; transform: translateX(-50%);
+    width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent;
+  }
+  .connector-arrow-up {
+    position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
+    width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent;
+  }
+
+  /* Flow labels */
+  .flow-label {
+    position: absolute; z-index: 12; font-family: 'Caveat', cursive; font-weight: 600;
+    font-size: 0.95rem; padding: 4px 12px; border-radius: 8px; background: white;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.06); white-space: nowrap;
+  }
+
+  /* Annotation */
+  .annotation { position: absolute; font-family: 'Caveat', cursive; font-weight: 600; z-index: 15; pointer-events: none; }
+
+  /* Legend */
+  .legend {
+    position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 18px; padding: 14px 24px; background: white;
+    border-radius: 14px; border: 1px solid rgba(0,0,0,0.08);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04); z-index: 15; flex-wrap: wrap; justify-content: center;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.7rem; color: #64748b; font-weight: 500; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 4px; }
+
+  /* Excl label */
+  .excl-label {
+    position: absolute; font-size: 0.68rem; font-weight: 600; padding: 3px 10px;
+    border-radius: 8px; background: #fef2f2; color: #dc2626; border: 1px dashed rgba(220,38,38,0.3);
+    z-index: 5;
+  }
+
+  @media print { body { background: white; } .whiteboard { background: white; } }
+</style>
+</head>
+<body>
+
+<div class="whiteboard">
+
+  <!-- TITLE -->
+  <div class="board-title">
+    <h1>Email Intelligence - Inbox Genie + FAQ Builder</h1>
+    <div class="underline"></div>
+    <p>Tri automatique des emails, brouillons de reponse IA enrichis par la FAQ, et construction automatique de la base FAQ</p>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- WORKFLOW 1: INBOX GENIE                                       -->
+  <!-- ============================================================ -->
+  <div class="wf-zone zone-genie">
+    <div class="wf-zone-title">
+      <h2>Inbox Genie</h2>
+      <span class="wf-badge">Tri + Brouillons IA</span>
+      <span class="freq">Quotidien</span>
+    </div>
+
+    <!-- Phase 1: Reception -->
+    <div class="phase-label">1. Reception et chargement contexte</div>
+    <div class="h-flow">
+      <div class="mini-node n-trigger"><span class="step-icon">⏰</span> Schedule Trigger</div>
+      <span class="mini-arrow">→</span>
+      <div class="mini-node n-gmail"><span class="step-icon">📨</span> Gmail getAll <span class="tech">non lus, max 50</span></div>
+      <span class="mini-arrow">→</span>
+      <div class="mini-node n-doc"><span class="step-icon">📄</span> Profil business <span class="tech">Google Drive</span></div>
+      <span class="mini-arrow">→</span>
+      <div class="mini-node n-doc"><span class="step-icon">📝</span> Extraire texte</div>
+    </div>
+
+    <div class="v-arrow">↓</div>
+
+    <!-- Phase 2: Classification batch -->
+    <div class="phase-label">2. Classification batch IA (tous les emails en 1 appel)</div>
+    <div class="h-flow">
+      <div class="mini-node n-code"><span class="step-icon">🔧</span> Construire prompt classification</div>
+      <span class="mini-arrow">→</span>
+      <div class="mini-node n-ai" style="border-color: rgba(168,85,247,0.4); box-shadow: 0 2px 12px rgba(168,85,247,0.08);">
+        <span class="step-icon">🧠</span> Gemini — Classifier batch
+        <span class="tech">categorie + priorite + reponse?</span>
+      </div>
+      <span class="mini-arrow">→</span>
+      <div class="mini-node n-code"><span class="step-icon">📊</span> Parser classifications</div>
+    </div>
+
+    <div class="v-arrow">↓</div>
+
+    <!-- Phase 3: Labels -->
+    <div class="phase-label">3. Application des labels Gmail</div>
+    <div class="h-flow">
+      <div class="mini-node n-gmail"><span class="step-icon">🏷️</span> Recuperer labels Gmail</div>
+      <span class="mini-arrow">→</span>
+      <div class="mini-node n-code"><span class="step-icon">🔀</span> Mapper et appliquer labels</div>
+    </div>
+
+    <div class="v-arrow">↓</div>
+
+    <!-- Phase 4: 4 branches paralleles -->
+    <div class="phase-label">4. Actions paralleles (4 branches)</div>
+    <div class="parallel-container">
+
+      <div class="branch">
+        <div class="branch-title" style="color: #dc2626;"><span>🏷️</span> Labelliser</div>
+        <div class="h-flow">
+          <div class="mini-node n-gmail"><span class="step-icon">🏷️</span> Appliquer label Gmail</div>
+        </div>
+      </div>
+
+      <div class="branch">
+        <div class="branch-title" style="color: #059669;"><span>📊</span> Logger</div>
+        <div class="h-flow">
+          <div class="mini-node n-data"><span class="step-icon">📊</span> Logger dans Stats <span class="tech">Google Sheet</span></div>
+        </div>
+      </div>
+
+      <div class="branch">
+        <div class="branch-title" style="color: #475569;"><span>✅</span> Marquer lu</div>
+        <div class="h-flow">
+          <div class="mini-node n-gmail"><span class="step-icon">✅</span> Marquer email lu</div>
+        </div>
+      </div>
+
+      <div class="branch" style="flex: 2.2; border-color: rgba(168,85,247,0.15); background: rgba(168,85,247,0.03);">
+        <div class="branch-title" style="color: #7c3aed;"><span>✉️</span> Brouillons de reponse (si necessaire)</div>
+        <div class="h-flow" style="flex-direction: row; align-items: center;">
+          <div class="mini-node n-logic"><span class="step-icon">❓</span> Reponse necessaire ?</div>
+          <span class="mini-arrow">→</span>
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <span style="font-size: 0.65rem; font-weight: 700; color: #16a34a; letter-spacing: 1px;">OUI</span>
+          </div>
+          <span class="mini-arrow">→</span>
+          <div class="mini-node n-data"><span class="step-icon">📚</span> Lire FAQ Base</div>
+          <span class="mini-arrow">→</span>
+          <div class="mini-node n-ai"><span class="step-icon">🧠</span> Gemini brouillon</div>
+          <span class="mini-arrow">→</span>
+          <div class="mini-node n-gmail"><span class="step-icon">📝</span> Creer brouillon Gmail</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- EXCLUSION LABEL                                               -->
+  <!-- ============================================================ -->
+  <div class="excl-label" style="top: 200px; right: 80px;">
+    Exclut label "Recrutement" (gere par le Screener CV)
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- FAQ BASE HUB                                                  -->
+  <!-- ============================================================ -->
+  <div class="hub" style="top: 1180px;">
+    <div style="font-size: 1.8rem; margin-bottom: 4px;">📚</div>
+    <h3>FAQ Base</h3>
+    <div class="hub-desc">Google Sheet - Base de connaissances construite automatiquement</div>
+    <div class="hub-cols">
+      <span class="hub-col">Date</span>
+      <span class="hub-col">Categorie</span>
+      <span class="hub-col">Question</span>
+      <span class="hub-col">Reponse</span>
+      <span class="hub-col">Email source</span>
+      <span class="hub-col">Sujet original</span>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- CONNECTORS: Genie ↔ FAQ Base ↔ FAQ Builder                   -->
+  <!-- ============================================================ -->
+
+  <!-- Genie reads FAQ (purple UP) -->
+  <div class="connector connector-v" style="top: 1100px; left: 780px; height: 80px; background: repeating-linear-gradient(to bottom, #7c3aed 0, #7c3aed 6px, transparent 6px, transparent 12px); opacity: 0.5;">
+    <div class="connector-arrow-up" style="border-bottom: 10px solid #7c3aed;"></div>
+  </div>
+  <div class="flow-label" style="top: 1120px; left: 810px; color: #7c3aed; border: 1.5px solid rgba(124,58,237,0.2); font-size: 0.85rem;">
+    ↑ Inbox Genie lit la FAQ pour enrichir les brouillons
+  </div>
+
+  <!-- FAQ Builder writes FAQ (green DOWN) -->
+  <div class="connector connector-v" style="top: 1400px; left: 720px; height: 80px; background: repeating-linear-gradient(to bottom, #059669 0, #059669 6px, transparent 6px, transparent 12px); opacity: 0.5;">
+    <div class="connector-arrow-down" style="border-top: 10px solid #059669;"></div>
+  </div>
+  <div class="flow-label" style="top: 1420px; left: 520px; color: #059669; border: 1.5px solid rgba(5,150,105,0.2); font-size: 0.85rem;">
+    ↓ FAQ Builder alimente la base automatiquement
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- WORKFLOW 2: FAQ BUILDER                                       -->
+  <!-- ============================================================ -->
+  <div class="wf-zone zone-faq">
+    <div class="wf-zone-title">
+      <h2>FAQ Builder</h2>
+      <span class="wf-badge">Construction FAQ automatique</span>
+      <span class="freq">Quotidien</span>
+    </div>
+
+    <!-- Phase 1: Recherche emails -->
+    <div class="phase-label">1. Recherche emails Client/Prospect avec reponse</div>
+    <div class="h-flow">
+      <div class="mini-node n-trigger"><span class="step-icon">⏰</span> Schedule Trigger</div>
+      <span class="mini-arrow">→</span>
+      <div class="mini-node n-gmail"><span class="step-icon">📨</span> Gmail getAll <span class="tech">label:Client OR Prospect, -FAQ</span></div>
+      <span class="mini-arrow">→</span>
+      <div class="mini-node n-code"><span class="step-icon">🔄</span> Dedupliquer par thread</div>
+      <span class="mini-arrow">→</span>
+      <div class="mini-node n-doc"><span class="step-icon">📄</span> Profil business <span class="tech">Google Drive</span></div>
+    </div>
+
+    <div class="v-arrow">↓</div>
+
+    <!-- Phase 2: Extraction Q&A -->
+    <div class="phase-label">2. Extraction de la question client et de la reponse Alex</div>
+    <div class="h-flow">
+      <div class="mini-node n-gmail"><span class="step-icon">📧</span> Thread complet Gmail</div>
+      <span class="mini-arrow">→</span>
+      <div class="mini-node n-code"><span class="step-icon">🔍</span> Extraire question + reponse <span class="tech">1er message externe + 1er from:me</span></div>
+    </div>
+
+    <div class="v-arrow">↓</div>
+
+    <!-- Phase 3: IA reformulation -->
+    <div class="phase-label">3. Reformulation IA en FAQ generique</div>
+    <div class="h-flow">
+      <div class="mini-node n-code"><span class="step-icon">🔧</span> Construire prompt FAQ</div>
+      <span class="mini-arrow">→</span>
+      <div class="mini-node n-ai" style="border-color: rgba(168,85,247,0.4); box-shadow: 0 2px 12px rgba(168,85,247,0.08);">
+        <span class="step-icon">🧠</span> Gemini 2.5 Flash
+        <span class="tech">Reformulation generique</span>
+      </div>
+      <span class="mini-arrow">→</span>
+      <div class="mini-node n-code"><span class="step-icon">📊</span> Parser FAQ <span class="tech">skip si non pertinent</span></div>
+    </div>
+
+    <div class="v-arrow">↓</div>
+
+    <!-- Phase 4: Sauvegarde -->
+    <div class="phase-label">4. Sauvegarde (2 branches paralleles)</div>
+    <div class="parallel-container">
+      <div class="branch" style="flex: 1.5;">
+        <div class="branch-title" style="color: #059669;"><span>📊</span> Sauvegarder FAQ</div>
+        <div class="h-flow" style="flex-direction: row;">
+          <div class="mini-node n-data"><span class="step-icon">📊</span> Append dans FAQ Base <span class="tech">Google Sheet</span></div>
+        </div>
+      </div>
+      <div class="branch">
+        <div class="branch-title" style="color: #dc2626;"><span>🏷️</span> Marquer traite</div>
+        <div class="h-flow" style="flex-direction: row;">
+          <div class="mini-node n-gmail"><span class="step-icon">🏷️</span> Ajouter label FAQ <span class="tech">evite retraitement</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- ANNOTATIONS                                                   -->
+  <!-- ============================================================ -->
+  <div class="annotation" style="top: 770px; left: 100px; font-size: 1.1rem; color: #7c3aed; transform: rotate(-3deg);">
+    La FAQ enrichit les brouillons avec des reponses factuelles
+  </div>
+
+  <div class="annotation" style="top: 2200px; right: 100px; font-size: 1.05rem; color: #059669; transform: rotate(2deg);">
+    Boucle vertueuse : plus d'emails traites = FAQ plus riche = meilleurs brouillons
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- LEGEND                                                        -->
+  <!-- ============================================================ -->
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-dot" style="background: #dcfce7; border: 2px solid #16a34a;"></div>
+      Trigger
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background: #fef2f2; border: 2px solid #dc2626;"></div>
+      Gmail
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background: #faf5ff; border: 2px solid #7c3aed;"></div>
+      IA / Gemini
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background: #ecfdf5; border: 2px solid #059669;"></div>
+      Google Sheets
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background: #eff6ff; border: 2px solid #2563eb;"></div>
+      Code (logique)
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background: #f8fafc; border: 2px solid #475569;"></div>
+      Google Drive
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background: #fefce8; border: 2px solid #ca8a04;"></div>
+      Condition
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

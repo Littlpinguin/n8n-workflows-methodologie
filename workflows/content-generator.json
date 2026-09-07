@@ -1,0 +1,495 @@
+{
+  "id": "N8N_RESOURCE_ID_21",
+  "name": "Content - Generator",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger-1",
+      "name": "Declencheur quotidien 9h",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 208]
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "GOOGLE_DOC_ID_02",
+          "mode": "id"
+        },
+        "options": {
+          "googleFileConversion": {
+            "conversion": {
+              "docsToFormat": "text/plain"
+            }
+          }
+        }
+      },
+      "id": "gdrive-dl-profil",
+      "name": "Telecharger profil business",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [224, 208],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_18",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "options": {}
+      },
+      "id": "extract-profil",
+      "name": "Extraire texte profil",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [448, 208]
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "GOOGLE_DOC_ID_08",
+          "mode": "id"
+        },
+        "options": {
+          "googleFileConversion": {
+            "conversion": {
+              "docsToFormat": "text/plain"
+            }
+          }
+        }
+      },
+      "id": "gdrive-dl-guide",
+      "name": "Telecharger guide editorial",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [672, 208],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_18",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "options": {}
+      },
+      "id": "extract-guide",
+      "name": "Extraire texte guide",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [896, 208]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "GOOGLE_DOC_ID_04"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Propositions"
+        },
+        "options": {}
+      },
+      "id": "sheets-read-1",
+      "name": "Lire sujets valides",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [1120, 208],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_03",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nreturn items.filter(item => {\n  const statut = (item.json.Statut || item.json.statut || '').trim().toUpperCase();\n  return statut === 'VALID\u00c9' || statut === 'VALIDE';\n});"
+      },
+      "id": "code-filter-1",
+      "name": "Filtrer sujets VALIDE",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1344, 208]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst promptDocIds = {\n  'LinkedIn': '1RM2kqd95nAuQGsDrQph7nfmbUvpcLivLs_7tyrdWXnA',\n  'Substack Article': '1WNavkoaIQRhLx7MOXW1CkVPcLyOKmR5m0gTmbo_bBOQ',\n  'Substack Notes': '12CHvW9QoNmsNqbEU84spbXJF8kNC4CzndBuAwP4krGg'\n};\n\nreturn items.map(item => {\n  const plateforme = item.json.Plateforme || item.json.plateforme || 'LinkedIn';\n  return {\n    json: {\n      ...item.json,\n      promptDocId: promptDocIds[plateforme] || promptDocIds['LinkedIn']\n    }\n  };\n});"
+      },
+      "id": "code-mapper",
+      "name": "Mapper prompt ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1568, 208]
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.promptDocId }}",
+          "mode": "id"
+        },
+        "options": {
+          "googleFileConversion": {
+            "conversion": {
+              "docsToFormat": "text/plain"
+            }
+          }
+        }
+      },
+      "id": "gdrive-dl-prompt",
+      "name": "Telecharger prompt",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [1792, 208],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_18",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "options": {}
+      },
+      "id": "extract-prompt",
+      "name": "Extraire texte prompt",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [2016, 208]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst mapperItems = $('Mapper prompt ID').all();\nconst profil = $('Extraire texte profil').first().json.data || '';\nconst guide = $('Extraire texte guide').first().json.data || '';\n\nconst PB = '\\u007b\\u007bPROFIL_BUSINESS\\u007d\\u007d';\nconst GE = '\\u007b\\u007bGUIDE_EDITORIAL\\u007d\\u007d';\nconst SU = '\\u007b\\u007bSUJET\\u007d\\u007d';\nconst AN = '\\u007b\\u007bANGLE\\u007d\\u007d';\nconst SP = '\\u007b\\u007bSOURCES_PERPLEXITY\\u007d\\u007d';\nconst CS = '\\u007b\\u007bCONTENU_SOURCE\\u007d\\u007d';\n\nreturn items.map((item, index) => {\n  const promptText = item.json.data || '';\n  const orig = mapperItems[index]?.json || {};\n  \n  const sujet = orig.Sujet || orig.sujet || '';\n  const angle = orig.Angle || orig.angle || '';\n  const sources = orig.Sources || orig.sources || '';\n  const plateforme = orig.Plateforme || orig.plateforme || '';\n  const rowNumber = orig.row_number || '';\n\n  let prompt = promptText\n    .replace(PB, profil)\n    .replace(GE, guide)\n    .replace(SU, sujet)\n    .replace(AN, angle)\n    .replace(SP, sources)\n    .replace(CS, sources);\n\n  if (sources && !promptText.includes('SOURCES') && !promptText.includes('sources')) {\n    prompt += '\\n\\nSOURCES DE REFERENCE :\\n' + sources;\n  }\n\n  return {\n    json: { prompt, sujet, plateforme, angle, sources, rowNumber }\n  };\n});"
+      },
+      "id": "code-assemble",
+      "name": "Assembler prompt final",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2240, 208]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-preview:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ contents: [{ role: 'user', parts: [{ text: $json.prompt }] }], generationConfig: { responseMimeType: 'application/json', temperature: 0.7 } }) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "gemini-generate",
+      "name": "Gemini \u2014 Generer contenu",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2464, 208],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "N8N_RESOURCE_ID_06",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst assemblerItems = $('Assembler prompt final').all();\n\nreturn items.map((item, index) => {\n  const response = item.json;\n  const text = response.candidates?.[0]?.content?.parts?.[0]?.text || '{}';\n  let contenu;\n  try {\n    contenu = JSON.parse(text);\n  } catch(e) {\n    const meta = assemblerItems[index]?.json || {};\n    return {\n      json: {\n        error: true,\n        message: 'Parsing JSON echoue',\n        raw: text.substring(0, 500),\n        sujet_ref: meta.sujet,\n        plateforme: meta.plateforme,\n        rowNumber: meta.rowNumber\n      }\n    };\n  }\n\n  const meta = assemblerItems[index]?.json || {};\n\n  return {\n    json: {\n      date: new Date().toISOString().split('T')[0],\n      sujet_ref: meta.sujet,\n      plateforme: meta.plateforme,\n      titre: contenu.titre || '',\n      hook: contenu.hook || contenu.accroche || '',\n      contenu: contenu.contenu || contenu.corps || '',\n      cta: contenu.cta || contenu.call_to_action || '',\n      hashtags: Array.isArray(contenu.hashtags) ? contenu.hashtags.join(', ') : (contenu.hashtags || ''),\n      statut: 'BROUILLON',\n      date_publication: '',\n      logs: 'WF2 Generator \\u2014 ' + new Date().toISOString(),\n      rowNumber: meta.rowNumber\n    }\n  };\n});"
+      },
+      "id": "code-parse",
+      "name": "Parser contenu genere",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2688, 208]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "GOOGLE_DOC_ID_04"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Brouillons"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{ $json.date }}",
+            "Sujet": "={{ $json.sujet_ref }}",
+            "Plateforme": "={{ $json.plateforme }}",
+            "Titre": "={{ $json.titre }}",
+            "Hook": "={{ $json.hook }}",
+            "Contenu": "={{ $json.contenu }}",
+            "CTA": "={{ $json.cta }}",
+            "Hashtags": "={{ $json.hashtags }}",
+            "Statut": "={{ $json.statut }}",
+            "Date publication": "={{ $json.date_publication }}",
+            "Logs": "={{ $json.logs }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "sheets-append-brouillon",
+      "name": "Ecrire brouillon",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [2912, 208],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_03",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "GOOGLE_DOC_ID_04"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Propositions"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Sujet": "={{ $('Parser contenu genere').item.json.sujet_ref }}",
+            "Statut": "GENERE"
+          },
+          "matchingColumns": ["Sujet"]
+        },
+        "options": {}
+      },
+      "id": "sheets-update-encours",
+      "name": "Mettre a jour statut GENERE",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [3136, 208],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_03",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sheets.googleapis.com/v4/spreadsheets/GOOGLE_DOC_ID_04:batchUpdate",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ requests: [{ repeatCell: { range: { sheetId: 1269236147, startRowIndex: $('Parser contenu genere').item.json.rowNumber - 1, endRowIndex: Number($('Parser contenu genere').item.json.rowNumber), startColumnIndex: 0, endColumnIndex: 9 }, cell: { userEnteredFormat: { backgroundColor: { red: 0.851, green: 0.918, blue: 0.827 } } }, fields: 'userEnteredFormat.backgroundColor' } }] }) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "http-format-row",
+      "name": "Formater ligne verte",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3360, 208],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_03",
+          "name": "Google Sheets account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const parserItems = $('Parser contenu genere').all();\nconst success = parserItems.filter(i => !i.json.error);\nconst errors = parserItems.filter(i => i.json.error);\n\nconst details = success\n  .map(i => '- ' + i.json.plateforme + ' : ' + i.json.sujet_ref + '\\n  Titre : ' + i.json.titre)\n  .join('\\n');\n\nconst errorDetails = errors\n  .map(i => '- ERREUR (' + i.json.plateforme + ') : ' + i.json.message)\n  .join('\\n');\n\nreturn [{\n  json: {\n    count: success.length,\n    errors: errors.length,\n    details,\n    errorDetails,\n    summary: success.length + ' brouillon(s) genere(s)' + (errors.length > 0 ? ', ' + errors.length + ' erreur(s)' : '')\n  }\n}];"
+      },
+      "id": "code-aggregate",
+      "name": "Aggreger resultats",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3584, 208]
+    },
+    {
+      "parameters": {
+        "sendTo": "contact@example.com",
+        "subject": "=Content Generator \u2014 {{ $now.toFormat('dd/MM/yyyy') }} \u2014 {{ $json.summary }}",
+        "emailType": "text",
+        "message": "={{ $json.summary }}\n\n{{ $json.details }}{{ $json.errorDetails ? '\\n\\nErreurs :\\n' + $json.errorDetails : '' }}\n\nBrouillons dans l'onglet Brouillons du Content Calendar.\nStatuts mis a jour : GENERE\n\n---\nContent Generator \u2014 {{ $now.toFormat('dd/MM/yyyy HH:mm') }}",
+        "options": {}
+      },
+      "id": "gmail-recap",
+      "name": "Email recap generation",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [3808, 208],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "N8N_RESOURCE_ID_10",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## 1. Trigger quotidien 9h\nLecture sujets VALIDE depuis Google Sheet\nFiltrage par statut avant traitement",
+        "height": 180,
+        "width": 320,
+        "color": 2
+      },
+      "id": "sticky-1",
+      "name": "1. Trigger quotidien 9h",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-112, -48]
+    },
+    {
+      "parameters": {
+        "content": "## 2. Chargement Profil Business + Guide Editorial\nGoogle Drive download \u2192 Extract text\nCharges 1 seule fois (1 item du trigger)",
+        "height": 180,
+        "width": 320,
+        "color": 3
+      },
+      "id": "sticky-2",
+      "name": "2. Chargement docs",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [400, -80]
+    },
+    {
+      "parameters": {
+        "content": "## 3. Mapper prompt ID\nCode node mappe Plateforme \u2192 Google Doc ID\nUn seul chemin pour tous les prompts",
+        "height": 180,
+        "width": 320,
+        "color": 4
+      },
+      "id": "sticky-3",
+      "name": "3. Mapper + Chargement prompt",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1424, -64]
+    },
+    {
+      "parameters": {
+        "content": "## 4. Assemblage prompt + Generation Gemini 2.5 Pro\nPlaceholders remplaces dynamiquement\nresponseMimeType: application/json\ntemperature: 0.7",
+        "height": 180,
+        "width": 380,
+        "color": 5
+      },
+      "id": "sticky-4",
+      "name": "4. Generation IA",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [2128, -64]
+    },
+    {
+      "parameters": {
+        "content": "## 5. Ecriture brouillon + Statut GENERE + Aggregation + Email recap unique\nTraitement par item, puis aggregation en 1 email",
+        "height": 180,
+        "width": 380,
+        "color": 6
+      },
+      "id": "sticky-5",
+      "name": "5. Ecriture + Notification",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [2880, -64]
+    }
+  ],
+  "connections": {
+    "Declencheur quotidien 9h": {
+      "main": [[{"node": "Telecharger profil business", "type": "main", "index": 0}]]
+    },
+    "Telecharger profil business": {
+      "main": [[{"node": "Extraire texte profil", "type": "main", "index": 0}]]
+    },
+    "Extraire texte profil": {
+      "main": [[{"node": "Telecharger guide editorial", "type": "main", "index": 0}]]
+    },
+    "Telecharger guide editorial": {
+      "main": [[{"node": "Extraire texte guide", "type": "main", "index": 0}]]
+    },
+    "Extraire texte guide": {
+      "main": [[{"node": "Lire sujets valides", "type": "main", "index": 0}]]
+    },
+    "Lire sujets valides": {
+      "main": [[{"node": "Filtrer sujets VALIDE", "type": "main", "index": 0}]]
+    },
+    "Filtrer sujets VALIDE": {
+      "main": [[{"node": "Mapper prompt ID", "type": "main", "index": 0}]]
+    },
+    "Mapper prompt ID": {
+      "main": [[{"node": "Telecharger prompt", "type": "main", "index": 0}]]
+    },
+    "Telecharger prompt": {
+      "main": [[{"node": "Extraire texte prompt", "type": "main", "index": 0}]]
+    },
+    "Extraire texte prompt": {
+      "main": [[{"node": "Assembler prompt final", "type": "main", "index": 0}]]
+    },
+    "Assembler prompt final": {
+      "main": [[{"node": "Gemini \u2014 Generer contenu", "type": "main", "index": 0}]]
+    },
+    "Gemini \u2014 Generer contenu": {
+      "main": [[{"node": "Parser contenu genere", "type": "main", "index": 0}]]
+    },
+    "Parser contenu genere": {
+      "main": [[{"node": "Ecrire brouillon", "type": "main", "index": 0}]]
+    },
+    "Ecrire brouillon": {
+      "main": [[{"node": "Mettre a jour statut GENERE", "type": "main", "index": 0}]]
+    },
+    "Mettre a jour statut GENERE": {
+      "main": [[{"node": "Formater ligne verte", "type": "main", "index": 0}]]
+    },
+    "Formater ligne verte": {
+      "main": [[{"node": "Aggreger resultats", "type": "main", "index": 0}]]
+    },
+    "Aggreger resultats": {
+      "main": [[{"node": "Email recap generation", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Paris",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "errorWorkflow": "bAurtiK8UqF7Mlw6"
+  },
+  "tags": ["verified"]
+}

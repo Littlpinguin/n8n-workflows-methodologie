@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Workflows Automatisation - Schémas</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #0f1117;
+    color: #e1e4e8;
+    padding: 60px 40px;
+  }
+
+  .page {
+    max-width: 1200px;
+    margin: 0 auto 120px;
+    page-break-after: always;
+  }
+
+  h1 {
+    font-size: 2.4rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, #60a5fa, #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .subtitle {
+    font-size: 1.1rem;
+    color: #8b949e;
+    margin-bottom: 48px;
+    font-weight: 300;
+  }
+
+  /* Flow diagram */
+  .flow {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .flow-section {
+    margin-bottom: 40px;
+  }
+
+  .section-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #8b949e;
+    margin-bottom: 16px;
+    padding-left: 4px;
+  }
+
+  .flow-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .node {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 18px;
+    border-radius: 12px;
+    font-size: 0.88rem;
+    font-weight: 500;
+    white-space: nowrap;
+    border: 1px solid rgba(255,255,255,0.08);
+    position: relative;
+  }
+
+  .node-icon {
+    font-size: 1.1rem;
+    flex-shrink: 0;
+  }
+
+  /* Node types */
+  .trigger {
+    background: linear-gradient(135deg, #1a3a2a, #1a2f1a);
+    border-color: rgba(52, 211, 153, 0.3);
+    color: #6ee7b7;
+  }
+
+  .process {
+    background: linear-gradient(135deg, #1a2640, #1a1f3a);
+    border-color: rgba(96, 165, 250, 0.3);
+    color: #93c5fd;
+  }
+
+  .ai {
+    background: linear-gradient(135deg, #2d1a40, #3a1a3a);
+    border-color: rgba(167, 139, 250, 0.3);
+    color: #c4b5fd;
+  }
+
+  .output {
+    background: linear-gradient(135deg, #3a2a1a, #402a1a);
+    border-color: rgba(251, 191, 36, 0.3);
+    color: #fcd34d;
+  }
+
+  .storage {
+    background: linear-gradient(135deg, #1a2a3a, #1a303a);
+    border-color: rgba(56, 189, 248, 0.3);
+    color: #7dd3fc;
+  }
+
+  .logic {
+    background: linear-gradient(135deg, #2a2a1a, #3a3a1a);
+    border-color: rgba(234, 179, 8, 0.25);
+    color: #fde68a;
+  }
+
+  /* Arrows */
+  .arrow {
+    color: #484f58;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+  }
+
+  .arrow-down {
+    display: flex;
+    justify-content: center;
+    padding: 8px 0;
+    color: #484f58;
+    font-size: 1.4rem;
+  }
+
+  /* Parallel branches */
+  .parallel-container {
+    display: flex;
+    gap: 20px;
+    margin-top: 4px;
+  }
+
+  .branch {
+    flex: 1;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px;
+    padding: 20px;
+  }
+
+  .branch-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .branch .flow-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .branch .node {
+    width: 100%;
+  }
+
+  .branch .arrow {
+    transform: rotate(90deg);
+    align-self: center;
+  }
+
+  /* Tags */
+  .tech-tag {
+    font-size: 0.65rem;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.06);
+    color: #8b949e;
+    font-weight: 500;
+    margin-left: auto;
+  }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    gap: 24px;
+    margin-top: 48px;
+    padding: 20px 24px;
+    background: rgba(255,255,255,0.02);
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.06);
+    flex-wrap: wrap;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.78rem;
+    color: #8b949e;
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+
+  /* Switch branches (3 way) */
+  .switch-branches {
+    display: flex;
+    gap: 16px;
+    flex: 1;
+  }
+
+  .switch-branch {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .switch-branch .node {
+    width: 100%;
+    font-size: 0.8rem;
+    padding: 10px 14px;
+  }
+
+  .switch-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: #8b949e;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .converge-label {
+    text-align: center;
+    font-size: 0.7rem;
+    color: #484f58;
+    margin: 8px 0;
+    font-style: italic;
+  }
+
+  /* Conditional */
+  .conditional {
+    display: flex;
+    gap: 16px;
+    margin-top: 4px;
+  }
+
+  .cond-branch {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .cond-label {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+  }
+
+  .cond-label.yes { color: #6ee7b7; }
+  .cond-label.no { color: #fca5a5; }
+
+  /* Stats bar */
+  .stats {
+    display: flex;
+    gap: 32px;
+    margin-bottom: 40px;
+    padding: 16px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #e1e4e8;
+  }
+
+  .stat-label {
+    font-size: 0.72rem;
+    color: #8b949e;
+    font-weight: 400;
+  }
+
+  @media print {
+    body { background: white; color: #1a1a1a; }
+    .node { border: 1px solid #ddd; }
+    .trigger { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+    .process { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+    .ai { background: #f5f3ff; color: #5b21b6; border-color: #ddd6fe; }
+    .output { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+    .storage { background: #ecfeff; color: #155e75; border-color: #a5f3fc; }
+    .logic { background: #fefce8; color: #713f12; border-color: #fef08a; }
+    h1 { color: #1a1a1a; background: none; -webkit-text-fill-color: #1a1a1a; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ==================== WORKFLOW 1: MEETING ==================== -->
+<div class="page">
+  <h1>Meeting - Analyser et classer</h1>
+  <p class="subtitle">Analyse automatique des transcriptions Google Meet avec compte-rendu IA et classement Drive</p>
+
+  <div class="stats">
+    <div class="stat">
+      <span class="stat-value">17</span>
+      <span class="stat-label">Nodes actifs</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">4</span>
+      <span class="stat-label">Sorties paralleles</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">Gemini</span>
+      <span class="stat-label">Moteur IA</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">Auto</span>
+      <span class="stat-label">Declenchement</span>
+    </div>
+  </div>
+
+  <div class="flow">
+
+    <!-- PHASE 1: Ingestion -->
+    <div class="flow-section">
+      <div class="section-label">1. Ingestion de la transcription</div>
+      <div class="flow-row">
+        <div class="node trigger">
+          <span class="node-icon">📡</span>
+          Detecter nouvelle transcription
+          <span class="tech-tag">Google Drive Trigger</span>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node process">
+          <span class="node-icon">⏳</span>
+          Attendre transcription
+          <span class="tech-tag">Wait 2min</span>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node process">
+          <span class="node-icon">📥</span>
+          Telecharger transcription
+          <span class="tech-tag">Google Drive</span>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node process">
+          <span class="node-icon">📄</span>
+          Extraire texte
+          <span class="tech-tag">Extract File</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">↓</div>
+
+    <!-- PHASE 2: Enrichissement + IA -->
+    <div class="flow-section">
+      <div class="section-label">2. Enrichissement et analyse IA</div>
+      <div class="flow-row">
+        <div class="node storage">
+          <span class="node-icon">📋</span>
+          Recuperer liste clients
+          <span class="tech-tag">Google Sheets</span>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node process">
+          <span class="node-icon">🔗</span>
+          Combiner donnees
+          <span class="tech-tag">Code</span>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node ai">
+          <span class="node-icon">🧠</span>
+          Construire prompt
+          <span class="tech-tag">Code</span>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node ai">
+          <span class="node-icon">✨</span>
+          Appeler Gemini API
+          <span class="tech-tag">HTTP Request</span>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node ai">
+          <span class="node-icon">📊</span>
+          Parser reponse
+          <span class="tech-tag">Code</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">↓</div>
+
+    <!-- PHASE 3: 4 Sorties paralleles -->
+    <div class="flow-section">
+      <div class="section-label">3. Actions paralleles (4 branches)</div>
+      <div class="parallel-container">
+
+        <div class="branch">
+          <div class="branch-title" style="color: #fcd34d;">
+            <span>📧</span> Emails participants
+          </div>
+          <div class="flow-row">
+            <div class="node output">
+              <span class="node-icon">✉️</span>
+              Preparer emails
+            </div>
+            <div class="node output">
+              <span class="node-icon">📝</span>
+              Creer brouillons Gmail
+            </div>
+          </div>
+        </div>
+
+        <div class="branch">
+          <div class="branch-title" style="color: #fcd34d;">
+            <span>📬</span> Recap Alex
+          </div>
+          <div class="flow-row">
+            <div class="node output">
+              <span class="node-icon">📋</span>
+              Preparer recap
+            </div>
+            <div class="node output">
+              <span class="node-icon">🚀</span>
+              Envoyer email recap
+            </div>
+          </div>
+        </div>
+
+        <div class="branch">
+          <div class="branch-title" style="color: #fcd34d;">
+            <span>✅</span> Taches
+          </div>
+          <div class="flow-row">
+            <div class="node output">
+              <span class="node-icon">📝</span>
+              Preparer taches
+            </div>
+            <div class="node output">
+              <span class="node-icon">☑️</span>
+              Creer Google Tasks
+            </div>
+          </div>
+        </div>
+
+        <div class="branch">
+          <div class="branch-title" style="color: #7dd3fc;">
+            <span>📂</span> Classement Drive
+          </div>
+          <div class="flow-row">
+            <div class="node storage">
+              <span class="node-icon">🔍</span>
+              Identifier client
+            </div>
+            <div class="node storage">
+              <span class="node-icon">📁</span>
+              Chercher/Creer dossier
+            </div>
+            <div class="node storage">
+              <span class="node-icon">📦</span>
+              Deplacer + Renommer
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-dot" style="background: #34d399;"></div>
+      Trigger
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background: #60a5fa;"></div>
+      Traitement
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background: #a78bfa;"></div>
+      IA / Gemini
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background: #fbbf24;"></div>
+      Sorties (Gmail, Tasks)
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background: #38bdf8;"></div>
+      Stockage (Drive, Sheets)
+    </div>
+  </div>
+</div>
+
+
+<!-- ==================== WORKFLOW 2: CV SCREENER ==================== -->
+<div class="page">
+  <h1>Recrutement - Screener CV Automatique</h1>
+  <p class="subtitle">Screening automatique des CVs recus par email, analyse IA vs fiche de poste, resultats dans Google Sheet</p>
+
+  <div class="stats">
+    <div class="stat">
+      <span class="stat-value">20</span>
+      <span class="stat-label">Nodes actifs</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">3</span>
+      <span class="stat-label">Formats CV supportes</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">2x Gemini</span>
+      <span class="stat-label">Analyse + Extraction</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">Gmail</span>
+      <span class="stat-label">Declenchement</span>
+    </div>
+  </div>
+
+  <div class="flow">
+
+    <!-- PHASE 1: Reception -->
+    <div class="flow-section">
+      <div class="section-label">1. Reception et upload</div>
+      <div class="flow-row">
+        <div class="node trigger">
+          <span class="node-icon">📨</span>
+          Recevoir CV par email
+          <span class="tech-tag">Gmail Trigger</span>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node storage">
+          <span class="node-icon">☁️</span>
+          Uploader CV dans Drive
+          <span class="tech-tag">Google Drive</span>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node logic">
+          <span class="node-icon">🔀</span>
+          Type de fichier ?
+          <span class="tech-tag">Switch</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">↓</div>
+
+    <!-- PHASE 2: Extraction multi-format -->
+    <div class="flow-section">
+      <div class="section-label">2. Extraction du texte (multi-format)</div>
+      <div class="parallel-container">
+
+        <div class="branch">
+          <div class="branch-title" style="color: #93c5fd;">
+            <span>📄</span> Word (.docx)
+          </div>
+          <div class="flow-row">
+            <div class="node process">
+              <span class="node-icon">🔄</span>
+              Convertir en Google Doc
+            </div>
+            <div class="node process">
+              <span class="node-icon">📥</span>
+              Telecharger
+            </div>
+            <div class="node process">
+              <span class="node-icon">📄</span>
+              Extraire texte
+            </div>
+          </div>
+        </div>
+
+        <div class="branch">
+          <div class="branch-title" style="color: #93c5fd;">
+            <span>📕</span> PDF
+          </div>
+          <div class="flow-row">
+            <div class="node process">
+              <span class="node-icon">📥</span>
+              Telecharger PDF
+            </div>
+            <div class="node process">
+              <span class="node-icon">📄</span>
+              Extraire texte
+            </div>
+          </div>
+        </div>
+
+        <div class="branch">
+          <div class="branch-title" style="color: #93c5fd;">
+            <span>📝</span> Texte (.txt)
+          </div>
+          <div class="flow-row">
+            <div class="node process">
+              <span class="node-icon">📥</span>
+              Telecharger TXT
+            </div>
+            <div class="node process">
+              <span class="node-icon">📄</span>
+              Extraire texte
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="converge-label">Les 3 branches convergent vers ↓</div>
+    </div>
+
+    <!-- PHASE 3: Standardisation + Fiche de poste -->
+    <div class="flow-section">
+      <div class="section-label">3. Preparation de l'analyse</div>
+      <div class="flow-row">
+        <div class="node process">
+          <span class="node-icon">🔧</span>
+          Standardiser CV
+          <span class="tech-tag">Set</span>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node storage">
+          <span class="node-icon">🔍</span>
+          Chercher fiche de poste
+          <span class="tech-tag">Google Drive</span>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node storage">
+          <span class="node-icon">📥</span>
+          Telecharger fiche
+          <span class="tech-tag">Google Drive</span>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node process">
+          <span class="node-icon">📄</span>
+          Extraire texte fiche
+          <span class="tech-tag">Extract File</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">↓</div>
+
+    <!-- PHASE 4: Double analyse Gemini -->
+    <div class="flow-section">
+      <div class="section-label">4. Double analyse IA (Gemini)</div>
+      <div class="flow-row">
+        <div class="node ai">
+          <span class="node-icon">🧠</span>
+          Construire prompt analyse
+          <span class="tech-tag">Code</span>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node ai">
+          <span class="node-icon">✨</span>
+          Analyser CV vs Fiche
+          <span class="tech-tag">Gemini API</span>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node ai">
+          <span class="node-icon">📊</span>
+          Parser analyse
+          <span class="tech-tag">Code</span>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node ai">
+          <span class="node-icon">🧠</span>
+          Prompt extraction
+          <span class="tech-tag">Code</span>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node ai">
+          <span class="node-icon">✨</span>
+          Extraire infos candidat
+          <span class="tech-tag">Gemini API</span>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node ai">
+          <span class="node-icon">📊</span>
+          Parser infos
+          <span class="tech-tag">Code</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow-down">↓</div>
+
+    <!-- PHASE 5: Resultats -->
+    <div class="flow-section">
+      <div class="section-label">5. Enregistrement des resultats</div>
+      <div class="flow-row">
+        <div class="node output">
+          <span class="node-icon">📊</span>
+          Enregistrer resultats
+          <span class="tech-tag">Google Sheets</span>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node output">
+          <span class="node-icon">✅</span>
+          Marquer email lu
+          <span class="tech-tag">Gmail</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-dot" style="background: #34d399;"></div>
+      Trigger
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background: #60a5fa;"></div>
+      Traitement
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background: #a78bfa;"></div>
+      IA / Gemini (x2)
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background: #fbbf24;"></div>
+      Sorties
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background: #38bdf8;"></div>
+      Stockage (Drive, Sheets)
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background: #eab308;"></div>
+      Logique (Switch)
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

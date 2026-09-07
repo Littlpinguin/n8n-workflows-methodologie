@@ -1,0 +1,467 @@
+{
+  "id": "N8N_RESOURCE_ID_04",
+  "name": "Diagnostic - Generer Rapport",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "diagnostic-rapport",
+        "options": {}
+      },
+      "id": "webhook-1",
+      "name": "Recevoir diagnostic",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        288
+      ],
+      "webhookId": "2419e123-6de0-406e-8c6a-2be47bac725e"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose",
+            "looseTypeValidation": true
+          },
+          "conditions": [
+            {
+              "id": "cond-email",
+              "leftValue": "={{ $json.body.email }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "cond-entreprise",
+              "leftValue": "={{ $json.body.entreprise }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "cond-score",
+              "leftValue": "={{ $json.body.score_global }}",
+              "rightValue": "0",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-1",
+      "name": "Valider payload",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        224,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst body = item.body || item;\n\n// Sanitiser l'email : supprimer les caracteres de controle et injections\nlet email = (body.email || '').split(/[\\r\\n]/)[0].trim().toLowerCase();\n\n// Valider le format email basique\nconst emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;\nif (!emailRegex.test(email)) {\n  throw new Error('Email invalide : ' + email);\n}\n\nconst domaine = email.split('@')[1] || '';\n\nconst domainesGeneriques = [\n  'gmail.com', 'outlook.com', 'outlook.fr', 'yahoo.fr', 'yahoo.com',\n  'hotmail.com', 'hotmail.fr', 'live.fr', 'live.com',\n  'orange.fr', 'free.fr', 'sfr.fr', 'wanadoo.fr', 'laposte.net',\n  'icloud.com', 'protonmail.com', 'pm.me'\n];\n\nconst domaineEntreprise = domainesGeneriques.includes(domaine) ? null : domaine;\n\n// GARDE-FOU anti-hallucination : verifier qu'un vrai site accessible existe\n// avant tout enrichissement. Un domaine d'email (ex: durand-conseil.fr) n'implique pas\n// un site web exploitable ; sans site verifie, on n'enrichit pas.\nlet siteActif = false;\nlet siteUrlVerifiee = null;\nif (domaineEntreprise) {\n  for (const u of ['https://' + domaineEntreprise, 'http://' + domaineEntreprise]) {\n    try {\n      const resp = await this.helpers.httpRequest({\n        method: 'GET',\n        url: u,\n        timeout: 6000,\n        followRedirect: true,\n        returnFullResponse: true,\n        ignoreHttpStatusErrors: true,\n      });\n      const code = resp.statusCode || 0;\n      const len = (typeof resp.body === 'string') ? resp.body.length : 0;\n      if (code >= 200 && code < 400 && len > 500) {\n        siteActif = true;\n        siteUrlVerifiee = u;\n        break;\n      }\n    } catch (e) {\n      // domaine injoignable sur cette URL, on tente la suivante\n    }\n  }\n}\n\nconst scoreGlobal = parseFloat(body.score_global) || 0;\nlet niveauGlobal = 'Debutant';\nif (scoreGlobal >= 3.4) niveauGlobal = 'Integre';\nelse if (scoreGlobal >= 2.6) niveauGlobal = 'Structure';\nelse if (scoreGlobal >= 1.8) niveauGlobal = 'Explorateur';\n\n// Sanitiser aussi prenom/nom/entreprise\nconst sanitize = (s) => (s || '').replace(/[\\r\\n]/g, '').trim();\n\nreturn [{\n  json: {\n    email: email,\n    prenom: sanitize(body.prenom),\n    nom: sanitize(body.nom),\n    entreprise: sanitize(body.entreprise),\n    taille_equipe: sanitize(body.taille_equipe) || null,\n    domaine: domaineEntreprise,\n    siteActif: siteActif,\n    siteUrlVerifiee: siteUrlVerifiee,\n    niveauGlobal: niveauGlobal,\n    score_usages: parseFloat(body.score_usages) || 0,\n    score_donnees: parseFloat(body.score_donnees) || 0,\n    score_competences: parseFloat(body.score_competences) || 0,\n    score_processus: parseFloat(body.score_processus) || 0,\n    score_gouvernance: parseFloat(body.score_gouvernance) || 0,\n    score_global: scoreGlobal\n  }\n}];"
+      },
+      "id": "code-domaine",
+      "name": "Extraire domaine email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const prospect = $('Extraire domaine email').first().json;\n\n// Parser la reponse Perplexity\nlet parsed = null;\nlet citations = [];\ntry {\n  const perplexity = $('Rechercher entreprise Perplexity').first().json;\n  citations = perplexity.citations || [];\n  let content = (perplexity.choices && perplexity.choices[0] && perplexity.choices[0].message && perplexity.choices[0].message.content) || '';\n  content = content.replace(/^```json\\s*/i, '').replace(/^```\\s*/i, '').replace(/\\s*```$/i, '').trim();\n  try {\n    let p = JSON.parse(content);\n    if (Array.isArray(p)) p = p[0];\n    parsed = p;\n  } catch (e) {\n    parsed = null;\n  }\n} catch (e) {\n  parsed = null;\n}\n\n// GARDE-FOU anti-hallucination : le contexte entreprise n'est utilise QUE si\n// (1) un vrai site accessible a ete verifie (siteActif) ET\n// (2) Perplexity confirme avoir trouve l'entreprise (found !== false).\nconst found = !!(parsed && parsed.found !== false);\nconst contexteVerifie = prospect.siteActif === true && found === true && !!parsed;\n\nlet contexteEntreprise = null;\nlet contexteTexte = '';\nif (contexteVerifie) {\n  contexteEntreprise = parsed;\n  const c = parsed;\n  const ok = (v) => v && v !== 'Non disponible' && String(v).trim() !== '';\n  const parts = [];\n  if (ok(c.secteur)) parts.push('Secteur : ' + c.secteur);\n  if (ok(c.description)) parts.push('Activite : ' + c.description);\n  if (ok(c.taille_estimee)) parts.push('Taille : ' + c.taille_estimee);\n  if (ok(c.services_produits)) parts.push('Services/Produits : ' + c.services_produits);\n  if (ok(c.clients_cibles)) parts.push('Clients cibles : ' + c.clients_cibles);\n  if (ok(c.presence_digitale)) parts.push('Presence digitale : ' + c.presence_digitale);\n  if (ok(c.enjeux_sectoriels)) parts.push('Enjeux sectoriels : ' + c.enjeux_sectoriels);\n  contexteTexte = parts.join('\\n');\n  if (citations.length > 0) {\n    contexteTexte += '\\n\\nSources : ' + citations.slice(0, 5).join(', ');\n  }\n}\n\nconst contexteDisponible = contexteTexte.trim() !== '';\n\nreturn [{\n  json: {\n    ...prospect,\n    contexteEntreprise: contexteEntreprise,\n    contexteTexte: contexteDisponible ? contexteTexte : 'Aucune information entreprise verifiee disponible. Ne fais aucune supposition sur cette entreprise, fonde-toi uniquement sur les scores et les reponses au questionnaire.',\n    contexteDisponible: contexteDisponible,\n    citations: contexteDisponible ? citations : []\n  }\n}];"
+      },
+      "id": "code-prep",
+      "name": "Preparer prompt Gemini",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        896,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ systemInstruction: { parts: [{ text: 'Tu es un consultant senior en strategie IA pour les PME et ETI, specialise dans le marketing digital. Tu produis des analyses personnalisees de diagnostics de maturite IA marketing.\\n\\n<rules>\\n- Redige en francais correct avec tous les accents (e avec accent aigu = \\u00e9, e avec accent grave = \\u00e8, a avec accent grave = \\u00e0, etc.). C\\'est obligatoire.\\n- Vouvoiement obligatoire, jamais de tutoiement\\n- Ton direct et professionnel, pas de jargon IA inutile\\n- Pas de tirets longs, utiliser des virgules ou des points\\n- REGLE ANTI-HALLUCINATION ABSOLUE : n\\'affirme JAMAIS un fait sur l\\'entreprise du prospect (secteur, produits, clients, activite) qui ne figure pas explicitement dans le bloc contexte_entreprise. Si ce bloc indique qu\\'aucune information verifiee n\\'est disponible, tu ne mentionnes AUCUN detail sur l\\'entreprise et tu fondes toute l\\'analyse uniquement sur les scores et les reponses au questionnaire.\\n- Si un contexte entreprise verifie est fourni, tu peux t\\'en servir pour choisir des exemples et des enjeux de secteur pertinents, formules avec prudence (par exemple : dans votre secteur, les structures comparables...). Ne presente jamais une information non verifiee comme un fait etabli.\\n- EVITE les repetitions d\\'une section a l\\'autre.\\n</rules>' }] }, contents: [{ role: 'user', parts: [{ text: '<prospect>\\nPr\\u00e9nom : ' + $json.prenom + '\\nNom : ' + $json.nom + '\\nEntreprise : ' + $json.entreprise + '\\nTaille \\u00e9quipe : ' + ($json.taille_equipe || 'Non renseign\\u00e9') + '\\n</prospect>\\n\\n<contexte_entreprise>\\n' + $json.contexteTexte + '\\n</contexte_entreprise>\\n\\n<scores>\\nUsages IA actuels : ' + $json.score_usages + '/4\\nDonn\\u00e9es marketing : ' + $json.score_donnees + '/4\\nComp\\u00e9tences et culture : ' + $json.score_competences + '/4\\nProcessus et workflows : ' + $json.score_processus + '/4\\nGouvernance et vision : ' + $json.score_gouvernance + '/4\\nScore global : ' + $json.score_global + '/4 (niveau : ' + $json.niveauGlobal + ')\\nNiveaux : 1.0-1.7 D\\u00e9butant, 1.8-2.5 Explorateur, 2.6-3.3 Structur\\u00e9, 3.4-4.0 Int\\u00e9gr\\u00e9\\n</scores>\\n\\n<questionnaire>\\nDIMENSION 1 - USAGES IA ACTUELS (score ' + $json.score_usages + ')\\nQ1.1 Quels outils IA utilisez-vous ? (1=jamais test\\u00e9, 2=tests ponctuels, 3=usage r\\u00e9gulier par certains, 4=int\\u00e9gr\\u00e9 au quotidien)\\nQ1.2 Types de t\\u00e2ches ? (1=pas utilis\\u00e9, 2=texte uniquement, 3=multi-usage contenu+analyse+brainstorming, 4=avanc\\u00e9 contenu+auto+perso+pr\\u00e9dictif)\\nQ1.3 Qualit\\u00e9 des sorties IA ? (1=pas de rep\\u00e8res, 2=sans v\\u00e9rifier, 3=retravail syst\\u00e9matique, 4=crit\\u00e8res clairs+process it\\u00e9ration)\\n\\nDIMENSION 2 - DONN\\u00c9ES MARKETING (score ' + $json.score_donnees + ')\\nQ2.1 Stockage donn\\u00e9es clients ? (1=\\u00e9parpill\\u00e9es Excel/mail, 2=CRM pas \\u00e0 jour, 3=CRM mis \\u00e0 jour, 4=CRM/CDP structur\\u00e9+enrichi+segments)\\nQ2.2 Segmentation audience ? (1=non, 2=basique, 3=multi-crit\\u00e8res manuel, 4=comportemental+d\\u00e9mo en clics)\\nQ2.3 Mesure performance ? (1=au feeling, 2=m\\u00e9triques base, 3=KPIs+reporting mensuel, 4=dashboards data-driven)\\nQ2.4 Responsable qualit\\u00e9 donn\\u00e9es ? (1=personne, 2=informel, 3=une personne sans process, 4=process clair+responsable)\\n\\nDIMENSION 3 - COMP\\u00c9TENCES ET CULTURE (score ' + $json.score_competences + ')\\nQ3.1 Confort outils num\\u00e9riques ? (1=basique, 2=CRM/analytics, 3=automatisation/int\\u00e9grations, 4=power users)\\nQ3.2 Attitude face \\u00e0 l\\'IA ? (1=m\\u00e9fiance, 2=curiosit\\u00e9 timide, 3=int\\u00e9r\\u00eat actif+tests, 4=champions qui tirent l\\'\\u00e9quipe)\\nQ3.3 Temps d\\u00e9di\\u00e9 formation ? (1=non, 2=temps perso, 3=quelques heures/mois, 4=planifi\\u00e9+encourag\\u00e9+reconnu)\\nQ3.4 Champion IA ? (1=non, 2=int\\u00e9r\\u00eat perso sans relais, 3=partage ponctuel, 4=reconnu+valoris\\u00e9)\\n\\nDIMENSION 4 - PROCESSUS ET WORKFLOWS (score ' + $json.score_processus + ')\\nQ4.1 Processus document\\u00e9s ? (1=dans les t\\u00eates, 2=partiellement, 3=principaux document\\u00e9s, 4=tout document\\u00e9+\\u00e0 jour)\\nQ4.2 T\\u00e2ches r\\u00e9p\\u00e9titives identifi\\u00e9es ? (1=jamais r\\u00e9fl\\u00e9chi, 2=id\\u00e9e g\\u00e9n\\u00e9rale, 3=liste faite, 4=liste+temps+priorit\\u00e9s auto)\\nQ4.3 Outils connect\\u00e9s ? (1=silos, 2=connexions basiques, 3=int\\u00e9grations actives, 4=\\u00e9cosyst\\u00e8me automatis\\u00e9)\\nQ4.4 Automatisation ? (1=jamais, 2=auto-r\\u00e9pondeur, 3=emailing+scoring+nurturing, 4=pilier du fonctionnement)\\n\\nDIMENSION 5 - GOUVERNANCE ET VISION (score ' + $json.score_gouvernance + ')\\nQ5.1 Vision IA marketing ? (1=pas discut\\u00e9, 2=informel, 3=direction sans chiffres, 4=objectifs+calendrier)\\nQ5.2 R\\u00e8gles d\\'usage IA ? (1=rien, 2=implicites, 3=guidelines pas syst\\u00e9matiques, 4=charte formalis\\u00e9e+appliqu\\u00e9e)\\nQ5.3 D\\u00e9cisions investissements IA ? (1=personne, 2=initiatives individuelles, 3=responsable sans budget, 4=d\\u00e9cideur+budget identifi\\u00e9s)\\n</questionnaire>\\n\\nBased on all the information above, produce the personalized diagnostic analysis in proper French with all accents.' }] }], generationConfig: { responseMimeType: 'application/json', responseSchema: { type: 'OBJECT', properties: { intro_personnalisee: { type: 'STRING', description: 'Paragraphe de 5-7 phrases en fran\\u00e7ais avec accents situant le score global et le niveau de maturit\\u00e9. Si un contexte entreprise v\\u00e9rifi\\u00e9 est disponible, contextualise prudemment par secteur, sinon reste strictement sur les scores sans rien inventer sur l\\'entreprise. Max 1000 caract\\u00e8res.' }, synthese_globale: { type: 'STRING', description: 'R\\u00e9sum\\u00e9 en 3-4 phrases des forces et axes d\\'am\\u00e9lioration. Max 500 caract\\u00e8res.' }, dimensions: { type: 'ARRAY', description: 'Exactement 5 dimensions dans cet ordre : Usages IA actuels, Donn\\u00e9es marketing, Comp\\u00e9tences et culture, Processus et workflows, Gouvernance et vision', items: { type: 'OBJECT', properties: { nom: { type: 'STRING', description: 'Nom exact de la dimension avec accents' }, diagnostic: { type: 'STRING', description: 'Analyse personnalis\\u00e9e de 5-7 phrases en fran\\u00e7ais avec accents. Max 1000 caract\\u00e8res.' }, quick_win: { type: 'STRING', description: 'Action concr\\u00e8te r\\u00e9alisable cette semaine, sp\\u00e9cifique au contexte. Max 400 caract\\u00e8res.' } }, required: ['nom', 'diagnostic', 'quick_win'] } } }, required: ['intro_personnalisee', 'synthese_globale', 'dimensions'] }, temperature: 1.0 } }) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "http-gemini-1",
+      "name": "Analyser dimensions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1120,
+        288
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "N8N_RESOURCE_ID_06",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ systemInstruction: { parts: [{ text: 'Tu es un consultant senior en strategie IA pour les PME, sp\\u00e9cialis\\u00e9 en plans d\\'action op\\u00e9rationnels. Tu g\\u00e9n\\u00e8res des recommandations concr\\u00e8tes bas\\u00e9es sur des diagnostics de maturit\\u00e9 IA marketing.\\n\\n<rules>\\n- R\\u00e9dige en fran\\u00e7ais correct avec tous les accents (\\u00e9, \\u00e8, \\u00ea, \\u00e0, \\u00f9, etc.). C\\'est obligatoire.\\n- Vouvoiement obligatoire\\n- Pas de tirets longs, utiliser des virgules ou des points\\n- N\\'affirme jamais un fait sur l\\'entreprise (secteur, produits, clients) absent du bloc contexte_entreprise. Sans contexte verifie, fonde les actions uniquement sur les scores. Avec un contexte verifie, tu peux l\\'utiliser avec prudence pour illustrer, jamais pour affirmer\\n- Prioriser les dimensions avec les scores les plus bas\\n- Chaque action est diff\\u00e9rente et compl\\u00e9mentaire\\n</rules>' }] }, contents: [{ role: 'user', parts: [{ text: '<entreprise>\\nNom : ' + $('Preparer prompt Gemini').first().json.entreprise + '\\nTaille \\u00e9quipe : ' + ($('Preparer prompt Gemini').first().json.taille_equipe || 'Non renseign\\u00e9') + '\\nScore global : ' + $('Preparer prompt Gemini').first().json.score_global + '/4 (' + $('Preparer prompt Gemini').first().json.niveauGlobal + ')\\n</entreprise>\\n\\n<scores>\\nUsages IA : ' + $('Preparer prompt Gemini').first().json.score_usages + '/4\\nDonn\\u00e9es marketing : ' + $('Preparer prompt Gemini').first().json.score_donnees + '/4\\nComp\\u00e9tences : ' + $('Preparer prompt Gemini').first().json.score_competences + '/4\\nProcessus : ' + $('Preparer prompt Gemini').first().json.score_processus + '/4\\nGouvernance : ' + $('Preparer prompt Gemini').first().json.score_gouvernance + '/4\\n</scores>\\n\\n<contexte_entreprise>\\n' + ($('Preparer prompt Gemini').first().json.contexteTexte || 'Non disponible') + '\\n</contexte_entreprise>\\n\\n<analyse_precedente>\\n' + (($json.candidates || [])[0] ? (($json.candidates[0].content || {}).parts ? (($json.candidates[0].content.parts[0] || {}).text || '{}') : '{}') : '{}') + '\\n</analyse_precedente>\\n\\nBased on all the information above, generate 3 to 5 prioritized actions in proper French with all accents.' }] }], generationConfig: { responseMimeType: 'application/json', responseSchema: { type: 'OBJECT', properties: { actions: { type: 'ARRAY', description: 'Entre 3 et 5 actions ordonn\\u00e9es par priorit\\u00e9 (impact fort + effort faible en premier)', items: { type: 'OBJECT', properties: { titre: { type: 'STRING', description: 'Titre court \\u00e0 l\\'infinitif en fran\\u00e7ais avec accents' }, description: { type: 'STRING', description: '3-5 phrases en fran\\u00e7ais avec accents. Max 500 caract\\u00e8res.' }, impact: { type: 'STRING', description: 'Uniquement fort, moyen ou faible (minuscules)' }, effort: { type: 'STRING', description: 'Uniquement fort, moyen ou faible (minuscules)' }, timeline: { type: 'STRING', description: 'Format Semaine X ou Semaine X-Y' } }, required: ['titre', 'description', 'impact', 'effort', 'timeline'] } } }, required: ['actions'] }, temperature: 1.0 } }) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "http-gemini-2",
+      "name": "Generer plan action",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1344,
+        288
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "N8N_RESOURCE_ID_06",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const prospect = $('Preparer prompt Gemini').first().json;\n\n// Parser reponse Gemini #1 (analyse dimensions)\nconst gemini1Raw = $('Analyser dimensions').first().json;\nlet analyse1 = {};\ntry {\n  const text1 = gemini1Raw.candidates[0].content.parts[0].text;\n  analyse1 = typeof text1 === 'string' ? JSON.parse(text1) : text1;\n  if (Array.isArray(analyse1)) analyse1 = analyse1[0];\n} catch(e) {\n  throw new Error('Erreur parsing Gemini #1 : ' + e.message);\n}\n\n// Parser reponse Gemini #2 (plan action)\nconst gemini2Raw = $('Generer plan action').first().json;\nlet analyse2 = {};\ntry {\n  const text2 = gemini2Raw.candidates[0].content.parts[0].text;\n  analyse2 = typeof text2 === 'string' ? JSON.parse(text2) : text2;\n  if (Array.isArray(analyse2)) analyse2 = analyse2[0];\n} catch(e) {\n  throw new Error('Erreur parsing Gemini #2 : ' + e.message);\n}\n\n// Generer magic token (64 chars hex) sans module crypto\nconst hexChars = '0123456789abcdef';\nlet magicToken = '';\nfor (let i = 0; i < 64; i++) {\n  magicToken += hexChars.charAt(Math.floor(Math.random() * 16));\n}\n\n// Expiration : now + 30 jours\nconst tokenExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();\n\n// URL complete du rapport\nconst rapportUrl = 'https://example.com/diagnostic/rapport/?token=' + magicToken;\n\n// Calculer dimension forte et faible\nconst dimensions = [\n  { nom: 'Usages IA actuels', score: prospect.score_usages },\n  { nom: 'Donnees marketing', score: prospect.score_donnees },\n  { nom: 'Competences et culture', score: prospect.score_competences },\n  { nom: 'Processus et workflows', score: prospect.score_processus },\n  { nom: 'Gouvernance et vision', score: prospect.score_gouvernance }\n];\nconst sorted = [...dimensions].sort((a, b) => b.score - a.score);\nconst dimensionForte = sorted[0].nom + ' (' + sorted[0].score + ')';\nconst dimensionFaible = sorted[sorted.length - 1].nom + ' (' + sorted[sorted.length - 1].score + ')';\n\n// Contexte entreprise depuis Perplexity\nconst contexteEntreprise = prospect.contexteEntreprise || null;\n\n// Assembler le JSON final pour Supabase\nconst rapport = {\n  email: prospect.email,\n  magic_token: magicToken,\n  token_expires_at: tokenExpiresAt,\n  prenom: prospect.prenom,\n  nom: prospect.nom,\n  entreprise: prospect.entreprise,\n  taille_equipe: prospect.taille_equipe || null,\n  date_diagnostic: new Date().toISOString(),\n  score_usages: prospect.score_usages,\n  score_donnees: prospect.score_donnees,\n  score_competences: prospect.score_competences,\n  score_processus: prospect.score_processus,\n  score_gouvernance: prospect.score_gouvernance,\n  score_global: prospect.score_global,\n  contexte_entreprise: contexteEntreprise,\n  analyse: {\n    intro_personnalisee: analyse1.intro_personnalisee || '',\n    synthese_globale: analyse1.synthese_globale || '',\n    dimensions: analyse1.dimensions || [],\n    actions: analyse2.actions || []\n  }\n};\n\n// Donnees supplementaires pour Brevo\nconst brevoExtra = {\n  niveauMaturite: prospect.niveauGlobal,\n  dimensionForte: dimensionForte,\n  dimensionFaible: dimensionFaible,\n  rapportSynthese: (analyse1.synthese_globale || '').substring(0, 500),\n  rapportUrl: rapportUrl\n};\n\nreturn [{ json: { ...rapport, brevoExtra } }];"
+      },
+      "id": "code-structurer",
+      "name": "Structurer rapport",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1568,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://<SUPABASE_PROJECT_REF>.supabase.co/rest/v1/diagnostic_reports",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "resolution=merge-duplicates"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer __SUPABASE_SERVICE_ROLE_KEY__"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ email: $json.email, magic_token: $json.magic_token, token_expires_at: $json.token_expires_at, prenom: $json.prenom, nom: $json.nom, entreprise: $json.entreprise, taille_equipe: $json.taille_equipe, date_diagnostic: $json.date_diagnostic, score_usages: $json.score_usages, score_donnees: $json.score_donnees, score_competences: $json.score_competences, score_processus: $json.score_processus, score_gouvernance: $json.score_gouvernance, score_global: $json.score_global, contexte_entreprise: $json.contexte_entreprise, analyse: $json.analyse }) }}",
+        "options": {
+          "timeout": 15000
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "on_conflict",
+              "value": "email"
+            }
+          ]
+        }
+      },
+      "id": "http-supabase",
+      "name": "Stocker rapport Supabase",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1792,
+        288
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "N8N_RESOURCE_ID_12",
+          "name": "supabaseServiceRole"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://api.brevo.com/v3/contacts/{{ encodeURIComponent($('Structurer rapport').first().json.email) }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ attributes: { RAPPORT_URL: $('Structurer rapport').first().json.brevoExtra.rapportUrl, RAPPORT_DATE: $('Structurer rapport').first().json.date_diagnostic, NIVEAU_MATURITE: $('Structurer rapport').first().json.brevoExtra.niveauMaturite, DIMENSION_FORTE: $('Structurer rapport').first().json.brevoExtra.dimensionForte, DIMENSION_FAIBLE: $('Structurer rapport').first().json.brevoExtra.dimensionFaible, RAPPORT_SYNTHESE: $('Structurer rapport').first().json.brevoExtra.rapportSynthese } }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "http-brevo-update",
+      "name": "Mettre a jour contact Brevo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2016,
+        288
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "N8N_RESOURCE_ID_20",
+          "name": "brevoApi"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.brevo.com/v3/contacts/lists/9/contacts/add",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ emails: [$('Structurer rapport').first().json.email] }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "http-brevo-liste",
+      "name": "Ajouter a liste Rapport pret",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2240,
+        288
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "N8N_RESOURCE_ID_20",
+          "name": "brevoApi"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "content": "## Diagnostic - Generer Rapport\n\nWebhook fire-and-forget declenche par le JS du diagnostic example.com.\nGenere une analyse IA personnalisee + mot de passe + stocke dans Supabase + update Brevo.\n\n**Flux :** Webhook > Validation > Scraping Jina (parallele) > 2x Gemini 3 Pro > Supabase > Brevo\n\n**Credentials :** googlePalmApi (Gemini), supabaseServiceRole, brevoApi\n**Error Workflow :** bAurtiK8UqF7Mlw6\n**Supabase :** <SUPABASE_PROJECT_REF> / diagnostic_reports\n**Brevo :** Liste 9 = Rapport pret (declenche automation email)\n\n**Ordre critique :** Supabase > Brevo PUT (password) > Brevo POST (liste 9)",
+        "height": 280,
+        "width": 450
+      },
+      "id": "note-1",
+      "name": "Documentation",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        -128
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.perplexity.ai/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: 'sonar-pro', messages: [ { role: 'system', content: \"Tu es un analyste business rigoureux. Tu ne dois JAMAIS inventer. Si tu ne trouves pas d\\'informations reelles et verifiables sur l\\'entreprise precise demandee (via son site officiel ou des sources fiables la nommant explicitement), renvoie exactement {\\\"found\\\": false}. Ne devine pas a partir du nom seul, ne decris pas une entreprise homonyme. Retourne UNIQUEMENT un JSON valide, sans bloc markdown, sans backticks.\" }, { role: 'user', content: ($json.siteActif ? (\"Analyse le site officiel de cette entreprise et retourne uniquement des informations factuelles et verifiables.\\nNom : \" + $json.entreprise + \"\\nSite web verifie : \" + $json.siteUrlVerifiee + \"\\n\\nSi ce site correspond bien a cette entreprise, retourne un JSON avec les champs : found (=true), secteur, description, taille_estimee, presence_digitale, services_produits, clients_cibles, enjeux_sectoriels (2 a 3 enjeux du secteur lies a l\\'IA et au marketing digital). Indique \\\"Non disponible\\\" pour tout champ reellement introuvable. Si le site ne correspond pas a cette entreprise ou n\\'a aucun contenu exploitable, renvoie {\\\"found\\\": false}.\") : (\"Entreprise : \" + $json.entreprise + \".\\nAucun site web verifiable n\\'a ete trouve pour cette entreprise, tu ne peux donc pas verifier son activite reelle sans source fiable. Renvoie exactement {\\\"found\\\": false}.\")) } ], max_tokens: 1200, temperature: 0, return_citations: true }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "http-perplexity",
+      "name": "Rechercher entreprise Perplexity",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        672,
+        288
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "N8N_RESOURCE_ID_17",
+          "name": "Perplexity API"
+        }
+      },
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Recevoir diagnostic": {
+      "main": [
+        [
+          {
+            "node": "Valider payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valider payload": {
+      "main": [
+        [
+          {
+            "node": "Extraire domaine email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparer prompt Gemini": {
+      "main": [
+        [
+          {
+            "node": "Analyser dimensions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyser dimensions": {
+      "main": [
+        [
+          {
+            "node": "Generer plan action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generer plan action": {
+      "main": [
+        [
+          {
+            "node": "Structurer rapport",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structurer rapport": {
+      "main": [
+        [
+          {
+            "node": "Stocker rapport Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stocker rapport Supabase": {
+      "main": [
+        [
+          {
+            "node": "Mettre a jour contact Brevo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mettre a jour contact Brevo": {
+      "main": [
+        [
+          {
+            "node": "Ajouter a liste Rapport pret",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraire domaine email": {
+      "main": [
+        [
+          {
+            "node": "Rechercher entreprise Perplexity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rechercher entreprise Perplexity": {
+      "main": [
+        [
+          {
+            "node": "Preparer prompt Gemini",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Paris",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "errorWorkflow": "bAurtiK8UqF7Mlw6",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  }
+}

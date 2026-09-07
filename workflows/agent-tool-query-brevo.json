@@ -1,0 +1,112 @@
+{
+  "name": "Agent Tool - Query Brevo",
+  "nodes": [
+    {
+      "id": "trigger-1",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      }
+    },
+    {
+      "id": "router-1",
+      "name": "Router Brevo API",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst PIPELINE_ID = '67c831a51f27cfb9fc9b13d3';\nconst qt = input.query_type || 'pipeline_summary';\nconst fv = input.filter_value || '';\n\nlet url = '';\nconst method = 'GET';\n\nswitch (qt) {\n  case 'pipeline_summary':\n    url = 'https://api.brevo.com/v3/crm/pipeline/' + PIPELINE_ID;\n    break;\n  case 'deals_by_stage':\n    url = 'https://api.brevo.com/v3/crm/deals?filters[attributes.deal_stage]=' + fv;\n    break;\n  case 'all_deals':\n    url = 'https://api.brevo.com/v3/crm/deals?limit=50';\n    break;\n  case 'contact_search':\n    url = 'https://api.brevo.com/v3/contacts/' + encodeURIComponent(fv);\n    break;\n  case 'contacts_recent': {\n    const days = parseInt(fv) || 7;\n    const since = new Date(Date.now() - days * 86400000).toISOString();\n    url = 'https://api.brevo.com/v3/contacts?limit=50&modifiedSince=' + since;\n    break;\n  }\n  default:\n    url = 'https://api.brevo.com/v3/crm/deals?limit=20';\n}\n\nreturn [{ json: { url, method, query_type: qt } }];"
+      }
+    },
+    {
+      "id": "http-1",
+      "name": "GET Brevo API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "method": "GET",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "brevoApi",
+          "name": "Brevo API"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "formatter-1",
+      "name": "Formatter Reponse",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst qt = $('Router Brevo API').first().json.query_type;\n\n// Check for error from HTTP node (continueOnFail)\nif (response.error || response.statusCode >= 400) {\n  const errMsg = response.error || response.message || 'Erreur API Brevo (HTTP ' + (response.statusCode || '?') + ')';\n  return [{ json: { formatted: 'Erreur Brevo: ' + errMsg, count: 0 } }];\n}\n\nlet formatted = '';\nlet count = 0;\n\nswitch (qt) {\n  case 'pipeline_summary': {\n    const pipeline = response;\n    const name = pipeline.pipeline_name || pipeline.name || 'Pipeline';\n    formatted = '**Pipeline: ' + name + '**\\n';\n    if (pipeline.stages && Array.isArray(pipeline.stages)) {\n      count = pipeline.stages.length;\n      pipeline.stages.forEach(s => {\n        formatted += '- ' + (s.name || s.id) + '\\n';\n      });\n    } else {\n      formatted += '(aucun stage trouve)\\n';\n    }\n    break;\n  }\n  case 'deals_by_stage':\n  case 'all_deals': {\n    const deals = response.items || response.deals || [];\n    count = deals.length;\n    formatted = '**Deals (' + count + ')**\\n';\n    deals.forEach(d => {\n      const name = d.attributes?.deal_name || d.name || d.id;\n      const stage = d.attributes?.deal_stage || '-';\n      const amount = d.attributes?.amount || d.amount || 0;\n      formatted += '- ' + name + ' | Stage: ' + stage + ' | ' + amount + ' EUR\\n';\n    });\n    if (count === 0) formatted += '(aucun deal)\\n';\n    break;\n  }\n  case 'contact_search': {\n    count = 1;\n    const c = response;\n    const email = c.email || '-';\n    const name = (c.attributes?.PRENOM || '') + ' ' + (c.attributes?.NOM || '');\n    const company = c.attributes?.SOCIETE || c.attributes?.SMS || '-';\n    formatted = '**Contact**\\n';\n    formatted += '- Nom: ' + name.trim() + '\\n';\n    formatted += '- Email: ' + email + '\\n';\n    formatted += '- Entreprise: ' + company + '\\n';\n    break;\n  }\n  case 'contacts_recent': {\n    const contacts = response.contacts || [];\n    count = contacts.length;\n    formatted = '**Contacts recents (' + count + ')**\\n';\n    contacts.forEach(c => {\n      const email = c.email || '-';\n      const name = (c.attributes?.PRENOM || '') + ' ' + (c.attributes?.NOM || '');\n      formatted += '- ' + name.trim() + ' (' + email + ')\\n';\n    });\n    if (count === 0) formatted += '(aucun contact recent)\\n';\n    break;\n  }\n  default:\n    formatted = 'Type de requete non reconnu: ' + qt;\n}\n\n// Truncate for Discord (1900 chars max)\nif (formatted.length > 1900) {\n  formatted = formatted.substring(0, 1897) + '...';\n}\n\nreturn [{ json: { formatted, count } }];"
+      }
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Router Brevo API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Router Brevo API": {
+      "main": [
+        [
+          {
+            "node": "GET Brevo API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET Brevo API": {
+      "main": [
+        [
+          {
+            "node": "Formatter Reponse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "WZllUF0m1hH7pf9E"
+  }
+}

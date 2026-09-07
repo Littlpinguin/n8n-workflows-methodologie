@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Content System - Schema Whiteboard</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #faf9f6;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .whiteboard {
+    position: relative;
+    width: 1600px;
+    height: 2400px;
+    margin: 0 auto;
+    padding: 50px 80px;
+    background:
+      radial-gradient(circle at 20% 30%, rgba(59,130,246,0.03) 0%, transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(168,85,247,0.03) 0%, transparent 50%),
+      linear-gradient(rgba(0,0,0,0.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,0,0,0.015) 1px, transparent 1px);
+    background-size: 100%, 100%, 40px 40px, 40px 40px;
+  }
+
+  /* ===== TITLE ===== */
+  .board-title {
+    text-align: center;
+    margin-bottom: 12px;
+  }
+  .board-title h1 {
+    font-family: 'Caveat', cursive;
+    font-size: 3.2rem;
+    font-weight: 700;
+    color: #1a1a2e;
+  }
+  .board-title .underline {
+    width: 300px;
+    height: 4px;
+    background: linear-gradient(90deg, transparent, #3b82f6, #8b5cf6, transparent);
+    margin: 4px auto 8px;
+    border-radius: 2px;
+  }
+  .board-title p {
+    font-size: 0.95rem;
+    color: #64748b;
+  }
+
+  /* ===== SHARED DOCS ===== */
+  .shared-docs {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 16px;
+    margin-bottom: 24px;
+    position: relative;
+    z-index: 5;
+  }
+  .shared-doc {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 0.72rem;
+    font-weight: 500;
+    background: white;
+    border: 1px solid rgba(0,0,0,0.08);
+    color: #475569;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+  }
+  .shared-docs-label {
+    font-family: 'Caveat', cursive;
+    font-size: 0.95rem;
+    color: #94a3b8;
+    text-align: center;
+    margin-bottom: 8px;
+  }
+
+  /* ===== CONNECTORS (HTML-based, same coord system as zones) ===== */
+  .connector {
+    position: absolute;
+    pointer-events: none;
+    z-index: 3;
+  }
+  .connector-v {
+    width: 3px;
+    border-radius: 2px;
+  }
+  .connector-arrow-down {
+    position: absolute;
+    bottom: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+  }
+  .connector-arrow-up {
+    position: absolute;
+    top: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+  }
+  .connector-curved {
+    border: 3px dashed;
+    border-radius: 40px;
+    background: transparent;
+  }
+
+  /* ===== WORKFLOW ZONES ===== */
+  .wf-zone {
+    position: absolute;
+    border-radius: 20px;
+    padding: 28px 32px;
+    z-index: 2;
+  }
+  .wf-zone-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  .wf-zone-title h2 {
+    font-family: 'Caveat', cursive;
+    font-size: 1.8rem;
+    font-weight: 700;
+  }
+  .wf-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+  }
+  .freq {
+    font-size: 0.62rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 12px;
+    letter-spacing: 0.5px;
+  }
+  .freq-weekly { background: #dbeafe; color: #1d4ed8; }
+  .freq-daily { background: #ede9fe; color: #6d28d9; }
+  .freq-monthly { background: #fed7aa; color: #c2410c; }
+
+  /* Zone VEILLE */
+  .zone-veille {
+    top: 260px;
+    left: 60px;
+    width: 680px;
+    background: linear-gradient(135deg, rgba(59,130,246,0.06), rgba(59,130,246,0.02));
+    border: 2px solid rgba(59,130,246,0.15);
+    box-shadow: 0 4px 24px rgba(59,130,246,0.06);
+  }
+  .zone-veille .wf-zone-title h2 { color: #2563eb; }
+  .zone-veille .wf-badge { background: #dbeafe; color: #1d4ed8; }
+
+  /* Zone GENERATOR */
+  .zone-generator {
+    top: 260px;
+    right: 60px;
+    width: 680px;
+    background: linear-gradient(135deg, rgba(168,85,247,0.06), rgba(168,85,247,0.02));
+    border: 2px solid rgba(168,85,247,0.15);
+    box-shadow: 0 4px 24px rgba(168,85,247,0.06);
+  }
+  .zone-generator .wf-zone-title h2 { color: #7c3aed; }
+  .zone-generator .wf-badge { background: #ede9fe; color: #6d28d9; }
+
+  /* Zone MISSIVE */
+  .zone-missive {
+    top: 1480px;
+    left: 180px;
+    width: 1240px;
+    background: linear-gradient(135deg, rgba(234,88,12,0.06), rgba(234,88,12,0.02));
+    border: 2px solid rgba(234,88,12,0.15);
+    box-shadow: 0 4px 24px rgba(234,88,12,0.06);
+  }
+  .zone-missive .wf-zone-title h2 { color: #c2410c; }
+  .zone-missive .wf-badge { background: #fed7aa; color: #c2410c; }
+
+  /* ===== CONTENT CALENDAR HUB ===== */
+  .hub {
+    position: absolute;
+    top: 1060px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 560px;
+    z-index: 10;
+    background: white;
+    border: 3px solid #059669;
+    border-radius: 20px;
+    padding: 24px 32px;
+    box-shadow:
+      0 8px 32px rgba(5,150,105,0.12),
+      0 0 0 6px rgba(5,150,105,0.05);
+    text-align: center;
+  }
+  .hub-icon { font-size: 2rem; margin-bottom: 4px; }
+  .hub h3 {
+    font-family: 'Caveat', cursive;
+    font-size: 1.7rem;
+    font-weight: 700;
+    color: #059669;
+    margin-bottom: 12px;
+  }
+  .hub-statuses {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0;
+  }
+  .status-pill {
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .status-arrow { color: #94a3b8; font-size: 1.1rem; margin: 0 2px; }
+  .s-proposition { background: #dbeafe; color: #1d4ed8; }
+  .s-valide { background: #fef3c7; color: #b45309; border: 2px dashed #f59e0b; }
+  .s-genere { background: #ede9fe; color: #6d28d9; }
+  .s-brouillon { background: #fce7f3; color: #be185d; }
+  .s-publie { background: #d1fae5; color: #065f46; }
+  .hub-sub { font-size: 0.75rem; color: #64748b; margin-top: 10px; }
+
+  /* ===== HUMAN CALLOUT ===== */
+  .human-callout {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 20px;
+    border-radius: 14px;
+    border: 2.5px dashed #f59e0b;
+    background: linear-gradient(135deg, #fffbeb, #fef3c7);
+    box-shadow: 0 4px 16px rgba(245,158,11,0.12);
+    z-index: 12;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #92400e;
+  }
+  .human-callout .callout-icon { font-size: 1.4rem; }
+
+  /* ===== FLOW LABELS between zones ===== */
+  .flow-label-left, .flow-label-right {
+    position: absolute;
+    z-index: 12;
+    font-family: 'Caveat', cursive;
+    font-weight: 600;
+    font-size: 0.95rem;
+    padding: 4px 12px;
+    border-radius: 8px;
+    background: white;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+    white-space: nowrap;
+  }
+
+  /* ===== FLOW ELEMENTS ===== */
+  .phase-label {
+    font-family: 'Caveat', cursive;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: #94a3b8;
+    margin: 14px 0 8px 4px;
+  }
+  .h-flow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .v-arrow {
+    text-align: center;
+    color: #cbd5e1;
+    font-size: 1.2rem;
+    line-height: 1;
+    margin: 2px 0;
+  }
+  .mini-node {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    background: white;
+    border: 1.5px solid rgba(0,0,0,0.08);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+    white-space: nowrap;
+  }
+  .mini-arrow { color: #cbd5e1; font-size: 0.9rem; }
+  .step-icon { font-size: 1rem; flex-shrink: 0; }
+  .tech {
+    font-size: 0.6rem;
+    padding: 2px 7px;
+    border-radius: 4px;
+    background: rgba(0,0,0,0.04);
+    color: #94a3b8;
+    font-weight: 600;
+    margin-left: auto;
+  }
+
+  /* Node type colors */
+  .n-trigger { border-color: rgba(34,197,94,0.3); background: linear-gradient(135deg, #f0fdf4, white); }
+  .n-trigger .step-icon { color: #16a34a; }
+  .n-api { border-color: rgba(59,130,246,0.3); background: linear-gradient(135deg, #eff6ff, white); }
+  .n-api .step-icon { color: #2563eb; }
+  .n-ai { border-color: rgba(168,85,247,0.3); background: linear-gradient(135deg, #faf5ff, white); }
+  .n-ai .step-icon { color: #7c3aed; }
+  .n-data { border-color: rgba(5,150,105,0.3); background: linear-gradient(135deg, #ecfdf5, white); }
+  .n-data .step-icon { color: #059669; }
+  .n-output { border-color: rgba(234,88,12,0.3); background: linear-gradient(135deg, #fff7ed, white); }
+  .n-output .step-icon { color: #ea580c; }
+  .n-doc { border-color: rgba(100,116,139,0.2); background: linear-gradient(135deg, #f8fafc, white); }
+  .n-doc .step-icon { color: #475569; }
+
+  /* Branches */
+  .branch-split { display: flex; gap: 16px; margin-top: 4px; }
+  .branch-box {
+    flex: 1;
+    border: 1.5px solid rgba(0,0,0,0.06);
+    border-radius: 12px;
+    padding: 12px 14px;
+    background: rgba(255,255,255,0.7);
+  }
+  .branch-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .branch-label.yes { color: #16a34a; }
+  .branch-label.no { color: #dc2626; }
+
+  /* Annotations */
+  .annotation {
+    position: absolute;
+    font-family: 'Caveat', cursive;
+    font-weight: 600;
+    z-index: 15;
+    pointer-events: none;
+  }
+
+  /* Legend */
+  .legend {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 20px;
+    padding: 14px 24px;
+    background: white;
+    border-radius: 14px;
+    border: 1px solid rgba(0,0,0,0.08);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+    z-index: 15;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.72rem;
+    color: #64748b;
+    font-weight: 500;
+  }
+  .legend-dot { width: 10px; height: 10px; border-radius: 4px; }
+  .legend-dot.dashed { border: 2px dashed #f59e0b; background: #fffbeb; }
+
+  @media print {
+    body { background: white; }
+    .whiteboard { background: white; }
+  }
+</style>
+</head>
+<body>
+
+<div class="whiteboard">
+
+  <!-- TITLE -->
+  <div class="board-title">
+    <h1>Content System - Pipeline complet</h1>
+    <div class="underline"></div>
+    <p>De la veille automatique a la newsletter mensuelle - 3 workflows orchestres autour du Content Calendar</p>
+  </div>
+
+  <!-- SHARED DOCS -->
+  <div class="shared-docs-label">Documents partages entre les 3 workflows</div>
+  <div class="shared-docs">
+    <div class="shared-doc">📄 Profil Business <span class="tech">Google Doc</span></div>
+    <div class="shared-doc">📝 Guide Editorial <span class="tech">Google Doc</span></div>
+    <div class="shared-doc">📑 Prompts par plateforme <span class="tech">Google Docs</span></div>
+    <div class="shared-doc">📰 Reference Missive <span class="tech">Google Doc</span></div>
+  </div>
+
+  <!-- ===== WORKFLOW 1: VEILLE HEBDO ===== -->
+  <div class="wf-zone zone-veille">
+    <div class="wf-zone-title">
+      <h2>1. Veille Hebdo</h2>
+      <span class="wf-badge">Workflow 1/3</span>
+      <span class="freq freq-weekly">Lundi 8h</span>
+    </div>
+
+    <div class="phase-label">Chargement contexte</div>
+    <div class="h-flow">
+      <div class="mini-node n-trigger"><span class="step-icon">⏰</span> Schedule Trigger</div>
+      <span class="mini-arrow">→</span>
+      <div class="mini-node n-doc"><span class="step-icon">📄</span> Profil business</div>
+      <span class="mini-arrow">→</span>
+      <div class="mini-node n-doc"><span class="step-icon">📝</span> Guide editorial</div>
+    </div>
+
+    <div class="v-arrow">↓</div>
+
+    <div class="phase-label">Recherche web</div>
+    <div class="h-flow">
+      <div class="mini-node n-api" style="border-color: rgba(59,130,246,0.4); box-shadow: 0 2px 12px rgba(59,130,246,0.08);">
+        <span class="step-icon">🔍</span> Perplexity sonar-pro
+        <span class="tech">3 domaines, 96h</span>
+      </div>
+    </div>
+
+    <div class="v-arrow">↓</div>
+
+    <div class="phase-label">Scoring IA</div>
+    <div class="h-flow">
+      <div class="mini-node n-ai" style="border-color: rgba(168,85,247,0.4); box-shadow: 0 2px 12px rgba(168,85,247,0.08);">
+        <span class="step-icon">🧠</span> Gemini 3 Pro Preview
+        <span class="tech">Scoring + angles</span>
+      </div>
+    </div>
+
+    <div class="v-arrow">↓</div>
+
+    <div class="phase-label">Sorties</div>
+    <div class="branch-split">
+      <div class="branch-box">
+        <div class="branch-label yes">Propositions trouvees</div>
+        <div class="h-flow">
+          <div class="mini-node n-data"><span class="step-icon">📊</span> Sheet Propositions</div>
+          <span class="mini-arrow">→</span>
+          <div class="mini-node n-output"><span class="step-icon">📧</span> Email recap</div>
+        </div>
+      </div>
+      <div class="branch-box">
+        <div class="branch-label no">Aucune proposition</div>
+        <div class="h-flow">
+          <div class="mini-node n-output"><span class="step-icon">📧</span> Email "rien a signaler"</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== WORKFLOW 2: GENERATOR ===== -->
+  <div class="wf-zone zone-generator">
+    <div class="wf-zone-title">
+      <h2>2. Content Generator</h2>
+      <span class="wf-badge">Workflow 2/3</span>
+      <span class="freq freq-daily">Quotidien 9h</span>
+    </div>
+
+    <div class="phase-label">Chargement contexte</div>
+    <div class="h-flow">
+      <div class="mini-node n-trigger"><span class="step-icon">⏰</span> Schedule Trigger</div>
+      <span class="mini-arrow">→</span>
+      <div class="mini-node n-doc"><span class="step-icon">📄</span> Profil business</div>
+      <span class="mini-arrow">→</span>
+      <div class="mini-node n-doc"><span class="step-icon">📝</span> Guide editorial</div>
+    </div>
+
+    <div class="v-arrow">↓</div>
+
+    <div class="phase-label">Selection des sujets</div>
+    <div class="h-flow">
+      <div class="mini-node n-data"><span class="step-icon">📊</span> Lire sujets VALIDE</div>
+      <span class="mini-arrow">→</span>
+      <div class="mini-node" style="border-color: rgba(234,88,12,0.3); background: linear-gradient(135deg, #fff7ed, white);">
+        <span class="step-icon" style="color: #ea580c;">🔀</span> Mapper prompt / plateforme
+      </div>
+    </div>
+
+    <div class="v-arrow">↓</div>
+
+    <div class="phase-label">Generation IA</div>
+    <div class="h-flow">
+      <div class="mini-node n-doc"><span class="step-icon">📑</span> Charger prompt plateforme</div>
+      <span class="mini-arrow">→</span>
+      <div class="mini-node n-ai" style="border-color: rgba(168,85,247,0.4); box-shadow: 0 2px 12px rgba(168,85,247,0.08);">
+        <span class="step-icon">🧠</span> Gemini 3 Pro Preview
+        <span class="tech">Redaction contenu</span>
+      </div>
+    </div>
+
+    <div class="v-arrow">↓</div>
+
+    <div class="phase-label">Enregistrement</div>
+    <div class="h-flow">
+      <div class="mini-node n-data"><span class="step-icon">📝</span> Ecrire brouillon</div>
+      <span class="mini-arrow">→</span>
+      <div class="mini-node n-data"><span class="step-icon">🟢</span> Statut → GENERE</div>
+      <span class="mini-arrow">→</span>
+      <div class="mini-node n-output"><span class="step-icon">📧</span> Email recap</div>
+    </div>
+  </div>
+
+  <!-- ===== HUMAN VALIDATION ===== -->
+  <div class="human-callout" style="top: 970px; left: 50%; transform: translateX(-50%);">
+    <span class="callout-icon">👤</span>
+    <div>
+      <div>Alex valide les sujets dans le Sheet</div>
+      <div style="font-size: 0.72rem; font-weight: 400; color: #b45309; margin-top: 2px;">
+        Etape manuelle : PROPOSITION → VALIDE
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== HTML CONNECTORS + LABELS ===== -->
+
+  <!-- BLUE: Veille (bottom ~830) → Calendar (top ~1060) -->
+  <div class="connector connector-v" style="top: 830px; left: 350px; height: 230px; background: repeating-linear-gradient(to bottom, #3b82f6 0, #3b82f6 8px, transparent 8px, transparent 14px); opacity: 0.5;">
+    <div class="connector-arrow-down" style="border-top: 10px solid #3b82f6;"></div>
+  </div>
+  <div class="flow-label-left" style="top: 920px; left: 370px; color: #3b82f6; border: 1.5px solid rgba(59,130,246,0.2);">
+    ↓ Ecrit PROPOSITION
+  </div>
+
+  <!-- PURPLE UP: Calendar (top ~1060) → Generator (bottom ~830) = Lit VALIDE -->
+  <div class="connector connector-v" style="top: 830px; left: 1100px; height: 230px; background: repeating-linear-gradient(to bottom, #7c3aed 0, #7c3aed 8px, transparent 8px, transparent 14px); opacity: 0.5;">
+    <div class="connector-arrow-up" style="border-bottom: 10px solid #7c3aed;"></div>
+  </div>
+  <div class="flow-label-right" style="top: 900px; left: 1120px; color: #7c3aed; border: 1.5px solid rgba(124,58,237,0.2);">
+    ↑ Lit VALIDE
+  </div>
+
+  <!-- PURPLE DOWN: Generator (bottom ~830) → Calendar (top ~1060) = Ecrit GENERE -->
+  <div class="connector connector-v" style="top: 830px; left: 1160px; height: 230px; background: repeating-linear-gradient(to bottom, #7c3aed 0, #7c3aed 6px, transparent 6px, transparent 12px); opacity: 0.3;">
+    <div class="connector-arrow-down" style="border-top: 10px solid #7c3aed; opacity: 0.5;"></div>
+  </div>
+  <div class="flow-label-right" style="top: 960px; left: 1180px; color: #7c3aed; border: 1.5px solid rgba(124,58,237,0.15); opacity: 0.7; font-size: 0.85rem;">
+    ↓ Ecrit GENERE
+  </div>
+
+  <!-- ORANGE: Calendar (bottom ~1250) → Missive (top ~1480) -->
+  <div class="connector connector-v" style="top: 1250px; left: 840px; height: 230px; background: repeating-linear-gradient(to bottom, #ea580c 0, #ea580c 8px, transparent 8px, transparent 14px); opacity: 0.5;">
+    <div class="connector-arrow-down" style="border-top: 10px solid #ea580c;"></div>
+  </div>
+  <div class="flow-label-left" style="top: 1340px; left: 860px; color: #ea580c; border: 1.5px solid rgba(234,88,12,0.2);">
+    ↓ Lit brouillons + propositions du mois
+  </div>
+
+  <!-- GREEN: Missive (top ~1480) → Calendar (bottom ~1250) -->
+  <div class="connector connector-v" style="top: 1250px; left: 770px; height: 230px; background: repeating-linear-gradient(to bottom, #059669 0, #059669 6px, transparent 6px, transparent 12px); opacity: 0.4;">
+    <div class="connector-arrow-up" style="border-bottom: 10px solid #059669; opacity: 0.6;"></div>
+  </div>
+  <div class="flow-label-left" style="top: 1370px; left: 600px; color: #059669; border: 1.5px solid rgba(5,150,105,0.2); font-size: 0.85rem;">
+    ↑ Marque utilises (vert)
+  </div>
+
+  <!-- ===== CONTENT CALENDAR HUB ===== -->
+  <div class="hub">
+    <div class="hub-icon">📊</div>
+    <h3>Content Calendar</h3>
+    <div style="font-size: 0.78rem; color: #64748b; margin-bottom: 14px;">Google Sheet central - 2 onglets</div>
+    <div class="hub-statuses">
+      <span class="status-pill s-proposition">PROPOSITION</span>
+      <span class="status-arrow">→</span>
+      <span class="status-pill s-valide">VALIDE</span>
+      <span class="status-arrow">→</span>
+      <span class="status-pill s-genere">GENERE</span>
+      <span class="status-arrow">→</span>
+      <span class="status-pill s-brouillon">BROUILLON</span>
+      <span class="status-arrow">→</span>
+      <span class="status-pill s-publie">PUBLIE</span>
+    </div>
+    <div class="hub-sub">
+      <strong>Propositions</strong> (sujets de veille) &nbsp;|&nbsp; <strong>Brouillons</strong> (contenus generes)
+    </div>
+  </div>
+
+  <!-- ===== WORKFLOW 3: LA MISSIVE DU PROF ===== -->
+  <div class="wf-zone zone-missive">
+    <div class="wf-zone-title">
+      <h2>3. La Missive du Prof</h2>
+      <span class="wf-badge">Workflow 3/3</span>
+      <span class="freq freq-monthly">25 du mois, 9h</span>
+    </div>
+
+    <div class="phase-label">Chargement contexte (4 Google Docs + 2 lectures Sheet)</div>
+    <div class="h-flow">
+      <div class="mini-node n-trigger"><span class="step-icon">⏰</span> Schedule Trigger</div>
+      <span class="mini-arrow">→</span>
+      <div class="mini-node n-doc"><span class="step-icon">📄</span> Profil</div>
+      <span class="mini-arrow">→</span>
+      <div class="mini-node n-doc"><span class="step-icon">📝</span> Guide</div>
+      <span class="mini-arrow">→</span>
+      <div class="mini-node n-doc"><span class="step-icon">📰</span> Ref. Missive</div>
+      <span class="mini-arrow">→</span>
+      <div class="mini-node n-doc"><span class="step-icon">📑</span> Prompt</div>
+      <span class="mini-arrow">→</span>
+      <div class="mini-node n-data"><span class="step-icon">📊</span> Brouillons publies</div>
+      <span class="mini-arrow">→</span>
+      <div class="mini-node n-data"><span class="step-icon">📊</span> Propositions du mois</div>
+    </div>
+
+    <div class="v-arrow">↓</div>
+
+    <div class="phase-label">Generation IA + creation document natif</div>
+    <div class="h-flow">
+      <div class="mini-node n-ai" style="border-color: rgba(168,85,247,0.4); box-shadow: 0 2px 12px rgba(168,85,247,0.08);">
+        <span class="step-icon">🧠</span> Gemini 3 Pro Preview
+        <span class="tech">Redaction newsletter</span>
+      </div>
+      <span class="mini-arrow">→</span>
+      <div class="mini-node n-api"><span class="step-icon">📄</span> Creer Google Doc vide <span class="tech">Drive API</span></div>
+      <span class="mini-arrow">→</span>
+      <div class="mini-node n-api"><span class="step-icon">🎨</span> Appliquer formatage <span class="tech">Docs API batchUpdate</span></div>
+    </div>
+
+    <div class="v-arrow">↓</div>
+
+    <div class="phase-label">Notification + suivi</div>
+    <div class="h-flow">
+      <div class="mini-node n-output"><span class="step-icon">📧</span> Notifier Alex</div>
+      <span class="mini-arrow">→</span>
+      <div class="mini-node n-data"><span class="step-icon">🟢</span> Formater lignes vertes <span class="tech">Brouillons utilises</span></div>
+    </div>
+  </div>
+
+  <!-- SVG removed — using HTML connectors instead -->
+
+  <!-- ===== ANNOTATION ===== -->
+  <div class="annotation" style="top: 1860px; right: 200px; font-size: 1.15rem; color: #ea580c; transform: rotate(2deg);">
+    → Google Doc natif formate, pret a envoyer
+  </div>
+
+  <!-- ===== LEGEND ===== -->
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-dot" style="background: #dcfce7; border: 2px solid #16a34a;"></div>
+      Trigger
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background: #eff6ff; border: 2px solid #3b82f6;"></div>
+      API externe
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background: #faf5ff; border: 2px solid #7c3aed;"></div>
+      IA / Gemini
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background: #ecfdf5; border: 2px solid #059669;"></div>
+      Google Sheets
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background: #fff7ed; border: 2px solid #ea580c;"></div>
+      Sortie (email, doc)
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background: #f8fafc; border: 2px solid #475569;"></div>
+      Google Docs (config)
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot dashed"></div>
+      Etape humaine
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

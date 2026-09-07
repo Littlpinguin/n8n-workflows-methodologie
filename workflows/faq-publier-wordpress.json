@@ -1,0 +1,448 @@
+{
+  "name": "FAQ - Publier sur WordPress",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [1],
+              "triggerAtHour": 7
+            }
+          ]
+        }
+      },
+      "id": "trigger-1",
+      "name": "Declencheur lundi 7h",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [256, 544]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "GOOGLE_DOC_ID_10"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "FAQ"
+        },
+        "options": {}
+      },
+      "id": "sheets-1",
+      "name": "Lire FAQ Base",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [480, 448],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_03",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const faqItems = items.filter(item => {\n  const publier = (item.json.Publier || '').trim().toUpperCase();\n  return publier === 'OUI';\n});\n\nif (faqItems.length === 0) {\n  throw new Error('Aucune FAQ marquee Publier=OUI. Workflow arrete.');\n}\n\nreturn faqItems;"
+      },
+      "id": "0c0fd446-92e9-48d2-85a2-4dc3aef5d901",
+      "name": "Filtrer Publier OUI",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [704, 448]
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "GOOGLE_DOC_ID_05"
+        },
+        "options": {
+          "googleFileConversion": {
+            "conversion": {
+              "docsToFormat": "text/plain"
+            }
+          }
+        }
+      },
+      "id": "f74bfe88-d544-456e-b262-9dffa27d96c1",
+      "name": "Telecharger prompt regroupement",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [928, 520],
+      "executeOnce": true,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_18",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "options": {}
+      },
+      "id": "2ca6ef1b-7e68-4bdf-944c-ac31a7e0b888",
+      "name": "Extraire texte prompt",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [1152, 520]
+    },
+    {
+      "parameters": {
+        "jsCode": "const promptTemplate = $('Extraire texte prompt').first().json.data;\n\nconst allFaq = $('Filtrer Publier OUI').all().map(item => ({\n  question: item.json.Question,\n  reponse: item.json.Reponse,\n  categorie: item.json.Categorie\n}));\n\nconst prompt = promptTemplate.replace(\n  '\\u007b\\u007bFAQ_DATA\\u007d\\u007d',\n  JSON.stringify(allFaq, null, 2)\n);\n\nconst requestBody = {\n  contents: [{\n    role: 'user',\n    parts: [{ text: prompt }]\n  }],\n  generationConfig: {\n    responseMimeType: 'application/json',\n    temperature: 0.4\n  }\n};\n\nreturn [{ json: { requestBody, faqCount: allFaq.length } }];"
+      },
+      "id": "1ec774ee-dd39-4913-91f4-b72e5a727df3",
+      "name": "Construire requete Gemini",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1376, 448],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.requestBody) }}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "1a15febc-cc31-4fed-9122-0c9a640d8d20",
+      "name": "Gemini regrouper FAQ",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1600, 448],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "N8N_RESOURCE_ID_06",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $json.candidates[0].content.parts[0].text;\nconst parsed = JSON.parse(raw);\n\nif (!parsed.categories || parsed.categories.length === 0) {\n  throw new Error('Gemini a retourne 0 categories. Abandon pour ne pas ecraser la FAQ existante.');\n}\n\nconst totalQuestions = parsed.categories.reduce((sum, cat) => sum + cat.questions.length, 0);\nif (totalQuestions === 0) {\n  throw new Error('Gemini a retourne 0 questions. Abandon.');\n}\n\nreturn [{\n  json: {\n    categories: parsed.categories,\n    totalQuestions,\n    totalCategories: parsed.categories.length,\n    faqInputCount: $('Construire requete Gemini').first().json.faqCount\n  }\n}];"
+      },
+      "id": "19748081-7073-4880-899a-6dbb432035a5",
+      "name": "Parser reponse Gemini",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1824, 448]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "GOOGLE_DOC_ID_10"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Config"
+        },
+        "options": {}
+      },
+      "id": "config-sheets-1",
+      "name": "Lire Config",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [480, 640],
+      "alwaysOutputData": true,
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_03",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const { categories, totalQuestions, totalCategories, faqInputCount } = $json;\n\n// Get page ID from Config\nconst configItems = $('Lire Config').all();\nconst pageIdRow = configItems.find(item => item.json.Cle === 'wordpress_page_id');\nconst existingPageId = pageIdRow ? (pageIdRow.json.Valeur || '').trim() : '';\n\n// CSS\nconst css = `<style>\n.faq-container { max-width: 800px; margin: 0 auto; }\n.faq-category { margin-bottom: 2em; }\n.faq-category h2 { font-size: 1.4em; margin-bottom: 0.8em; padding-bottom: 0.4em; border-bottom: 2px solid #333; }\ndetails.faq-item { border-bottom: 1px solid #eee; padding: 12px 0; }\ndetails.faq-item summary { cursor: pointer; font-weight: 600; font-size: 1.1em; list-style: none; display: flex; justify-content: space-between; align-items: center; }\ndetails.faq-item summary::after { content: '+'; font-size: 1.4em; font-weight: 300; transition: transform 0.2s; }\ndetails[open].faq-item summary::after { content: '-'; }\ndetails.faq-item .faq-answer { padding: 8px 0 4px 0; line-height: 1.6; color: #444; }\n</style>`;\n\n// HTML accordions\nlet html = css + '\\n<div class=\"faq-container\">\\n';\n\nfor (const cat of categories) {\n  html += `  <div class=\"faq-category\">\\n`;\n  html += `    <h2>${cat.name}</h2>\\n`;\n  for (const q of cat.questions) {\n    html += `    <details class=\"faq-item\">\\n`;\n    html += `      <summary>${q.question}</summary>\\n`;\n    html += `      <div class=\"faq-answer\">${q.answer}</div>\\n`;\n    html += `    </details>\\n`;\n  }\n  html += `  </div>\\n`;\n}\nhtml += '</div>\\n';\n\n// Schema.org FAQPage\nconst schemaEntities = [];\nfor (const cat of categories) {\n  for (const q of cat.questions) {\n    schemaEntities.push({\n      '@type': 'Question',\n      name: q.question,\n      acceptedAnswer: {\n        '@type': 'Answer',\n        text: q.answer\n      }\n    });\n  }\n}\n\nconst schema = {\n  '@context': 'https://schema.org',\n  '@type': 'FAQPage',\n  mainEntity: schemaEntities\n};\n\nhtml += `\\n<script type=\"application/ld+json\">\\n${JSON.stringify(schema, null, 2)}\\n</script>`;\n\nreturn [{\n  json: {\n    htmlContent: html,\n    existingPageId,\n    isUpdate: existingPageId !== '',\n    totalQuestions,\n    totalCategories,\n    faqInputCount\n  }\n}];"
+      },
+      "id": "html-gen-1",
+      "name": "Generer HTML FAQ",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2048, 448]
+    },
+    {
+      "parameters": {
+        "jsCode": "if ($json.isUpdate) return [];\nreturn items;"
+      },
+      "id": "route-create-1",
+      "name": "Route si nouvelle page",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2272, 352]
+    },
+    {
+      "parameters": {
+        "jsCode": "if (!$json.isUpdate) return [];\nreturn items;"
+      },
+      "id": "route-update-1",
+      "name": "Route si page existante",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2272, 544]
+    },
+    {
+      "parameters": {
+        "resource": "page",
+        "title": "FAQ",
+        "additionalFields": {
+          "content": "={{ $json.htmlContent }}",
+          "slug": "faq",
+          "status": "publish",
+          "commentStatus": "closed"
+        }
+      },
+      "id": "wp-create-1",
+      "name": "Creer page FAQ",
+      "type": "n8n-nodes-base.wordpress",
+      "typeVersion": 1,
+      "position": [2496, 352],
+      "credentials": {
+        "wordpressApi": {
+          "id": "PLACEHOLDER",
+          "name": "WordPress account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "page",
+        "operation": "update",
+        "postId": "={{ $json.existingPageId }}",
+        "updateFields": {
+          "content": "={{ $json.htmlContent }}"
+        }
+      },
+      "id": "wp-update-1",
+      "name": "Mettre a jour page FAQ",
+      "type": "n8n-nodes-base.wordpress",
+      "typeVersion": 1,
+      "position": [2496, 544],
+      "credentials": {
+        "wordpressApi": {
+          "id": "PLACEHOLDER",
+          "name": "WordPress account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const wpResponse = $json;\nconst htmlData = $('Generer HTML FAQ').first().json;\n\n// Page ID: from WordPress response (new page) or from existing config\nconst pageId = wpResponse.id ? String(wpResponse.id) : htmlData.existingPageId;\nconst isNew = !htmlData.isUpdate;\n\nreturn [{\n  json: {\n    pageId,\n    isNew,\n    totalQuestions: htmlData.totalQuestions,\n    totalCategories: htmlData.totalCategories,\n    faqInputCount: htmlData.faqInputCount,\n    pageUrl: wpResponse.link || ''\n  }\n}];"
+      },
+      "id": "agreger-resultats-1",
+      "name": "Agreger resultats",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2720, 448]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "GOOGLE_DOC_ID_10"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Config"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Cle": "wordpress_page_id",
+            "Valeur": "={{ $json.pageId }}"
+          },
+          "matchingColumns": ["Cle"]
+        },
+        "options": {}
+      },
+      "id": "save-page-id-1",
+      "name": "Sauver page ID",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [2944, 160],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_03",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "GOOGLE_DOC_ID_10"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Config"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Cle": "dernier_update",
+            "Valeur": "={{ $now.toFormat('yyyy-MM-dd HH:mm') }}"
+          },
+          "matchingColumns": ["Cle"]
+        },
+        "options": {}
+      },
+      "id": "save-date-update-1",
+      "name": "Sauver date update",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [2944, 352],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_03",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "GOOGLE_DOC_ID_10"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Config"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Cle": "nb_questions_publiees",
+            "Valeur": "={{ $json.totalQuestions }}"
+          },
+          "matchingColumns": ["Cle"]
+        },
+        "options": {}
+      },
+      "id": "save-nb-questions-1",
+      "name": "Sauver nb questions",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [2944, 544],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_03",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "contact@example.com",
+        "subject": "=FAQ WordPress - {{ $now.toFormat('dd/MM/yyyy') }} - {{ $json.totalQuestions }} questions publiees",
+        "emailType": "text",
+        "message": "=FAQ WordPress mise a jour avec succes.\n\n- Questions publiees : {{ $json.totalQuestions }} (depuis {{ $json.faqInputCount }} entrees FAQ Base)\n- Categories creees : {{ $json.totalCategories }}\n- Page : {{ $json.isNew ? 'NOUVELLE page creee' : 'Page existante mise a jour' }}\n{{ $json.pageUrl ? '- URL : ' + $json.pageUrl : '' }}\n\n---\nFAQ WordPress - {{ $now.toFormat('dd/MM/yyyy HH:mm') }}",
+        "options": {}
+      },
+      "id": "email-recap-faq-1",
+      "name": "Email recap FAQ",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [2944, 736],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "N8N_RESOURCE_ID_10",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Declencheur lundi 7h": {
+      "main": [[
+        {"node": "Lire FAQ Base", "type": "main", "index": 0},
+        {"node": "Lire Config", "type": "main", "index": 0}
+      ]]
+    },
+    "Lire FAQ Base": {
+      "main": [[{"node": "Filtrer Publier OUI", "type": "main", "index": 0}]]
+    },
+    "Filtrer Publier OUI": {
+      "main": [[
+        {"node": "Construire requete Gemini", "type": "main", "index": 0},
+        {"node": "Telecharger prompt regroupement", "type": "main", "index": 0}
+      ]]
+    },
+    "Telecharger prompt regroupement": {
+      "main": [[{"node": "Extraire texte prompt", "type": "main", "index": 0}]]
+    },
+    "Extraire texte prompt": {
+      "main": [[{"node": "Construire requete Gemini", "type": "main", "index": 0}]]
+    },
+    "Construire requete Gemini": {
+      "main": [[{"node": "Gemini regrouper FAQ", "type": "main", "index": 0}]]
+    },
+    "Gemini regrouper FAQ": {
+      "main": [[{"node": "Parser reponse Gemini", "type": "main", "index": 0}]]
+    },
+    "Parser reponse Gemini": {
+      "main": [[{"node": "Generer HTML FAQ", "type": "main", "index": 0}]]
+    },
+    "Generer HTML FAQ": {
+      "main": [[
+        {"node": "Route si nouvelle page", "type": "main", "index": 0},
+        {"node": "Route si page existante", "type": "main", "index": 0}
+      ]]
+    },
+    "Route si nouvelle page": {
+      "main": [[{"node": "Creer page FAQ", "type": "main", "index": 0}]]
+    },
+    "Route si page existante": {
+      "main": [[{"node": "Mettre a jour page FAQ", "type": "main", "index": 0}]]
+    },
+    "Creer page FAQ": {
+      "main": [[{"node": "Agreger resultats", "type": "main", "index": 0}]]
+    },
+    "Mettre a jour page FAQ": {
+      "main": [[{"node": "Agreger resultats", "type": "main", "index": 0}]]
+    },
+    "Agreger resultats": {
+      "main": [[
+        {"node": "Sauver page ID", "type": "main", "index": 0},
+        {"node": "Sauver date update", "type": "main", "index": 0},
+        {"node": "Sauver nb questions", "type": "main", "index": 0},
+        {"node": "Email recap FAQ", "type": "main", "index": 0}
+      ]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "bAurtiK8UqF7Mlw6"
+  }
+}

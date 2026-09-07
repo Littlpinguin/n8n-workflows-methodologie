@@ -1,0 +1,506 @@
+{
+  "id": "N8N_RESOURCE_ID_02",
+  "name": "Content - La Missive du Prof",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 25 * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger-missive",
+      "name": "Declencheur mensuel 25",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [0, 400]
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "GOOGLE_DOC_ID_02"
+        },
+        "options": {
+          "googleFileConversion": {
+            "conversion": {
+              "docsToFormat": "text/plain"
+            }
+          }
+        }
+      },
+      "id": "gdrive-dl-profil",
+      "name": "Telecharger profil business",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [224, 400],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_18",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "options": {}
+      },
+      "id": "extract-profil",
+      "name": "Extraire texte profil",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [448, 400]
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "GOOGLE_DOC_ID_08"
+        },
+        "options": {
+          "googleFileConversion": {
+            "conversion": {
+              "docsToFormat": "text/plain"
+            }
+          }
+        }
+      },
+      "id": "gdrive-dl-guide",
+      "name": "Telecharger guide editorial",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [672, 400],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_18",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "options": {}
+      },
+      "id": "extract-guide",
+      "name": "Extraire texte guide",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [896, 400]
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "GOOGLE_DOC_ID_06"
+        },
+        "options": {
+          "googleFileConversion": {
+            "conversion": {
+              "docsToFormat": "text/plain"
+            }
+          }
+        }
+      },
+      "id": "gdrive-dl-ref",
+      "name": "Telecharger reference missive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [1120, 400],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_18",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "options": {}
+      },
+      "id": "extract-ref",
+      "name": "Extraire texte reference missive",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [1344, 400]
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "GOOGLE_DOC_ID_03"
+        },
+        "options": {
+          "googleFileConversion": {
+            "conversion": {
+              "docsToFormat": "text/plain"
+            }
+          }
+        }
+      },
+      "id": "gdrive-dl-prompt",
+      "name": "Telecharger prompt missive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [1568, 400],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_18",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "options": {}
+      },
+      "id": "extract-prompt",
+      "name": "Extraire texte prompt missive",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [1792, 400]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "GOOGLE_DOC_ID_04"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Brouillons"
+        },
+        "options": {}
+      },
+      "id": "sheets-brouillons",
+      "name": "Lire contenus publies",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [2016, 400],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_03",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "GOOGLE_DOC_ID_04"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Propositions"
+        },
+        "options": {}
+      },
+      "id": "sheets-propositions",
+      "name": "Lire propositions mois",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [2240, 400],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_03",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const profil = $('Extraire texte profil').first().json.data || '';\nconst guide = $('Extraire texte guide').first().json.data || '';\nconst refMissive = $('Extraire texte reference missive').first().json.data || '';\nconst promptTemplate = $('Extraire texte prompt missive').first().json.data || '';\n\nconst contenusRaw = $('Lire contenus publies').all().map(i => i.json);\nconst propositionsRaw = $('Lire propositions mois').all().map(i => i.json);\n\nconst now = new Date();\nconst moisCourant = now.getMonth();\nconst anneeCourante = now.getFullYear();\n\nfunction estMoisCourant(dateStr) {\n  if (!dateStr) return false;\n  const d = new Date(dateStr);\n  return d.getMonth() === moisCourant && d.getFullYear() === anneeCourante;\n}\n\n// Filtrer contenus PUBLIE du mois courant uniquement\nconst contenus = contenusRaw.filter(c => {\n  const statut = (c.Statut || c.statut || '').trim().toUpperCase();\n  const isPublie = statut === 'PUBLI\\u00c9' || statut === 'PUBLIE';\n  const dateStr = c['Date publication'] || c.Date || c.date || '';\n  return isPublie && estMoisCourant(dateStr);\n});\n\n// Collecter les row_number des lignes utilisees (pour formatage vert)\nconst usedBrouillonRows = contenus.map(c => c.row_number).filter(Boolean);\n\nconst propositions = propositionsRaw.filter(p => estMoisCourant(p.Date || p.date));\n\nconst moisAnnee = now.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });\n\nlet prompt = promptTemplate;\nprompt = prompt.replace('\\u007b\\u007bPROFIL_BUSINESS\\u007d\\u007d', profil);\nprompt = prompt.replace('\\u007b\\u007bGUIDE_EDITORIAL\\u007d\\u007d', guide);\nprompt = prompt.replace('\\u007b\\u007bREFERENCE_MISSIVE\\u007d\\u007d', refMissive);\nprompt = prompt.replace('\\u007b\\u007bMOIS_ANNEE\\u007d\\u007d', moisAnnee);\nprompt = prompt.replace('\\u007b\\u007bCONTENUS_PUBLIES\\u007d\\u007d', JSON.stringify(contenus, null, 2));\nprompt = prompt.replace('\\u007b\\u007bPROPOSITIONS_MOIS\\u007d\\u007d', JSON.stringify(propositions, null, 2));\nprompt = prompt.replace('\\u007b\\u007bSOURCES_PERPLEXITY_MOIS\\u007d\\u007d', propositions.map(p => p.Sources || p.sources || '').filter(Boolean).join('\\n'));\n\nreturn [{ json: { prompt, moisAnnee, usedBrouillonRows, contenusCount: contenus.length, propositionsCount: propositions.length } }];"
+      },
+      "id": "code-assembler",
+      "name": "Assembler prompt Missive",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2464, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-preview:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ contents: [{ role: 'user', parts: [{ text: $json.prompt }] }], generationConfig: { responseMimeType: 'application/json', temperature: 0.7 } }) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "gemini-missive",
+      "name": "Gemini \u2014 Generer Missive",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [2688, 400],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 15000,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "N8N_RESOURCE_ID_06",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst raw = response.candidates?.[0]?.content?.parts?.[0]?.text;\nlet missive;\n\nif (typeof raw === 'object' && raw !== null) {\n  missive = raw;\n} else if (typeof raw === 'string') {\n  try {\n    missive = JSON.parse(raw);\n  } catch(e) {\n    const match = raw.match(/\\{[\\s\\S]*\\}/);\n    if (match) {\n      try { missive = JSON.parse(match[0]); } catch(e2) { missive = null; }\n    }\n  }\n}\n\nif (!missive) {\n  missive = { titre: 'La Missive du Prof', contenu: raw || '' };\n}\n\nconst meta = $('Assembler prompt Missive').first().json;\n\nreturn [{\n  json: {\n    titre: missive.titre || 'La Missive du Prof - ' + meta.moisAnnee,\n    contenu: missive.contenu || '',\n    hook: missive.hook || '',\n    cta: missive.cta || '',\n    notes: missive.notes_internes || '',\n    moisAnnee: meta.moisAnnee\n  }\n}];"
+      },
+      "id": "code-parser",
+      "name": "Parser Missive",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2912, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.googleapis.com/drive/v3/files",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ name: 'Missive du Prof - ' + $json.moisAnnee, mimeType: 'application/vnd.google-apps.document', parents: ['1GjXAwmt8DuVbPJjsWI1ARsZPfSQIpsKv'] }) }}",
+        "options": {}
+      },
+      "id": "http-create-doc",
+      "name": "Creer Google Doc vide",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [3136, 400],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_18",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const m = $('Parser Missive').first().json;\nconst docId = $input.first().json.id;\n\nfunction cleanMd(text) {\n  if (!text) return '';\n  return text\n    .replace(/\\*\\*(.+?)\\*\\*/g, '$1')\n    .replace(/\\*(.+?)\\*/g, '$1');\n}\n\nconst docSections = [];\n\n// Titre\ndocSections.push({ text: m.titre + '\\n', style: 'TITLE' });\n\n// Sommaire\nif (m.hook) {\n  docSections.push({ text: '\\nDans cette missive\\n', style: 'HEADING_2' });\n  docSections.push({ text: cleanMd(m.hook) + '\\n', style: 'NORMAL_TEXT' });\n}\n\n// Contenu principal\nconst lines = (m.contenu || '').split('\\n');\nlet paragraph = '';\n\nfor (const line of lines) {\n  const headingMatch = line.match(/^(#{1,3})\\s+(.+)$/);\n  if (headingMatch) {\n    if (paragraph.trim()) {\n      docSections.push({ text: paragraph, style: 'NORMAL_TEXT' });\n      paragraph = '';\n    }\n    const level = headingMatch[1].length;\n    const styles = { 1: 'HEADING_1', 2: 'HEADING_2', 3: 'HEADING_3' };\n    docSections.push({ text: '\\n' + cleanMd(headingMatch[2]) + '\\n', style: styles[level] });\n  } else if (line.trim() === '---') {\n    if (paragraph.trim()) {\n      docSections.push({ text: paragraph, style: 'NORMAL_TEXT' });\n      paragraph = '';\n    }\n  } else {\n    paragraph += cleanMd(line) + '\\n';\n  }\n}\nif (paragraph.trim()) {\n  docSections.push({ text: paragraph, style: 'NORMAL_TEXT' });\n}\n\n// CTA\nif (m.cta) {\n  docSections.push({ text: '\\n' + cleanMd(m.cta) + '\\n', style: 'NORMAL_TEXT' });\n}\n\n// Signature\ndocSections.push({ text: '\\nLe Prof\\n', style: 'NORMAL_TEXT' });\n\n// Notes internes\nif (m.notes) {\n  docSections.push({ text: '\\nNOTES INTERNES (a supprimer avant envoi)\\n', style: 'HEADING_3' });\n  docSections.push({ text: cleanMd(m.notes) + '\\n', style: 'NORMAL_TEXT' });\n}\n\n// Construire les requetes Google Docs API\nconst requests = [];\nconst fullText = docSections.map(s => s.text).join('');\n\nrequests.push({\n  insertText: {\n    location: { index: 1 },\n    text: fullText\n  }\n});\n\nlet idx = 1;\nfor (const section of docSections) {\n  if (section.style !== 'NORMAL_TEXT') {\n    requests.push({\n      updateParagraphStyle: {\n        range: {\n          startIndex: idx,\n          endIndex: idx + section.text.length\n        },\n        paragraphStyle: {\n          namedStyleType: section.style\n        },\n        fields: 'namedStyleType'\n      }\n    });\n  }\n  idx += section.text.length;\n}\n\nreturn [{ json: { docId, body: { requests } } }];"
+      },
+      "id": "code-build-format",
+      "name": "Construire formatage",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3360, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://docs.googleapis.com/v1/documents/{{ $json.docId }}:batchUpdate",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "http-apply-format",
+      "name": "Appliquer formatage",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [3584, 400],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_18",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "contact@example.com",
+        "subject": "=La Missive du Prof - {{ $('Parser Missive').first().json.moisAnnee }} - brouillon pret",
+        "message": "=<h2>La Missive du Prof est prete !</h2>\n<p><strong>Titre :</strong> {{ $('Parser Missive').first().json.titre }}</p>\n<p><strong>Sommaire :</strong> {{ $('Parser Missive').first().json.hook }}</p>\n<p><a href=\"https://docs.google.com/document/d/{{ $('Creer Google Doc vide').first().json.id }}/edit\">Ouvrir le brouillon dans Google Docs</a></p>\n<p>---<br/>Genere automatiquement par le workflow <em>Content - La Missive du Prof</em></p>",
+        "options": {}
+      },
+      "id": "gmail-notifier",
+      "name": "Notifier Alex",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [3808, 400],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "N8N_RESOURCE_ID_10",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Recuperer les row_number des contenus PUBLIE utilises\nconst rows = $('Assembler prompt Missive').first().json.usedBrouillonRows || [];\n\nif (rows.length === 0) {\n  return [{ json: { skip: true, message: 'Aucune ligne a formater' } }];\n}\n\n// Preparer les requetes repeatCell pour chaque ligne\nconst requests = rows.map(rowNum => ({\n  repeatCell: {\n    range: {\n      sheetId: 1111947149,\n      startRowIndex: rowNum - 1,\n      endRowIndex: rowNum,\n      startColumnIndex: 0,\n      endColumnIndex: 11\n    },\n    cell: {\n      userEnteredFormat: {\n        backgroundColor: {\n          red: 0.851,\n          green: 0.918,\n          blue: 0.827\n        }\n      }\n    },\n    fields: 'userEnteredFormat.backgroundColor'\n  }\n}));\n\nreturn [{ json: { skip: false, body: { requests } } }];"
+      },
+      "id": "code-prep-format",
+      "name": "Preparer formatage vert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [4032, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sheets.googleapis.com/v4/spreadsheets/GOOGLE_DOC_ID_04:batchUpdate",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.skip ? JSON.stringify({requests: []}) : JSON.stringify($json.body) }}",
+        "options": {}
+      },
+      "id": "http-format-vert",
+      "name": "Formater lignes vertes",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [4256, 400],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "N8N_RESOURCE_ID_03",
+          "name": "Google Sheets account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "content": "## 1. Trigger mensuel\nSchedule Trigger : le 25 de chaque mois a 9h\nGenere La Missive du Prof automatiquement",
+        "width": 280,
+        "color": 2
+      },
+      "id": "sticky-trigger",
+      "name": "1. Trigger mensuel (25 du mois a 9h)",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-96, 208]
+    },
+    {
+      "parameters": {
+        "content": "## 2. Chargement sequentiel\nProfil \u2192 Guide \u2192 Reference Missive \u2192 Prompt Missive\nFlux sequentiel pour garantir l'acces $('NodeName')",
+        "width": 350,
+        "color": 3
+      },
+      "id": "sticky-docs",
+      "name": "2. Chargement docs (sequentiel)",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [224, 208]
+    },
+    {
+      "parameters": {
+        "content": "## 3. Lecture Content Calendar\n- Brouillons : contenus PUBLIE du mois\n- Propositions : sujets du mois courant\nalwaysOutputData: true (gere 0 resultats)",
+        "width": 350,
+        "color": 4
+      },
+      "id": "sticky-sheets",
+      "name": "3. Lecture Google Sheet",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [2016, 208]
+    },
+    {
+      "parameters": {
+        "content": "## 4. Generation Missive\nAssemblage prompt (6 sources) \u2192 Gemini 3 Pro Preview\n\u2192 Parser \u2192 Google Doc dans Content System/ \u2192 Email",
+        "width": 380,
+        "color": 5
+      },
+      "id": "sticky-gemini",
+      "name": "4. Generation + Brouillon + Email",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [2464, 208]
+    }
+  ],
+  "connections": {
+    "Declencheur mensuel 25": {
+      "main": [[{"node": "Telecharger profil business", "type": "main", "index": 0}]]
+    },
+    "Telecharger profil business": {
+      "main": [[{"node": "Extraire texte profil", "type": "main", "index": 0}]]
+    },
+    "Extraire texte profil": {
+      "main": [[{"node": "Telecharger guide editorial", "type": "main", "index": 0}]]
+    },
+    "Telecharger guide editorial": {
+      "main": [[{"node": "Extraire texte guide", "type": "main", "index": 0}]]
+    },
+    "Extraire texte guide": {
+      "main": [[{"node": "Telecharger reference missive", "type": "main", "index": 0}]]
+    },
+    "Telecharger reference missive": {
+      "main": [[{"node": "Extraire texte reference missive", "type": "main", "index": 0}]]
+    },
+    "Extraire texte reference missive": {
+      "main": [[{"node": "Telecharger prompt missive", "type": "main", "index": 0}]]
+    },
+    "Telecharger prompt missive": {
+      "main": [[{"node": "Extraire texte prompt missive", "type": "main", "index": 0}]]
+    },
+    "Extraire texte prompt missive": {
+      "main": [[{"node": "Lire contenus publies", "type": "main", "index": 0}]]
+    },
+    "Lire contenus publies": {
+      "main": [[{"node": "Lire propositions mois", "type": "main", "index": 0}]]
+    },
+    "Lire propositions mois": {
+      "main": [[{"node": "Assembler prompt Missive", "type": "main", "index": 0}]]
+    },
+    "Assembler prompt Missive": {
+      "main": [[{"node": "Gemini \u2014 Generer Missive", "type": "main", "index": 0}]]
+    },
+    "Gemini \u2014 Generer Missive": {
+      "main": [[{"node": "Parser Missive", "type": "main", "index": 0}]]
+    },
+    "Parser Missive": {
+      "main": [[{"node": "Creer Google Doc vide", "type": "main", "index": 0}]]
+    },
+    "Creer Google Doc vide": {
+      "main": [[{"node": "Construire formatage", "type": "main", "index": 0}]]
+    },
+    "Construire formatage": {
+      "main": [[{"node": "Appliquer formatage", "type": "main", "index": 0}]]
+    },
+    "Appliquer formatage": {
+      "main": [[{"node": "Notifier Alex", "type": "main", "index": 0}]]
+    },
+    "Notifier Alex": {
+      "main": [[{"node": "Preparer formatage vert", "type": "main", "index": 0}]]
+    },
+    "Preparer formatage vert": {
+      "main": [[{"node": "Formater lignes vertes", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Paris",
+    "errorWorkflow": "bAurtiK8UqF7Mlw6"
+  },
+  "tags": ["verified"]
+}
